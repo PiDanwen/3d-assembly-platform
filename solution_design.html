@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全局IM系统 — 方案设计</title>
+<style>
+  :root {
+    --student-color: #00B894;
+    --student-bg: #E8F8F5;
+    --system-color: #0984E3;
+    --system-bg: #EBF5FB;
+    --teacher-color: #6C5CE7;
+    --teacher-bg: #EDEAFF;
+    --decision-color: #E17055;
+    --decision-bg: #FFF3E0;
+    --error-color: #D63031;
+    --error-bg: #FFEAEA;
+    --text: #2D3436;
+    --text-light: #636E72;
+    --bg: #FFFFFF;
+    --border: #DFE6E9;
+    --arrow-color: #636E72;
+    --accent: #6C5CE7;
+    --accent-bg: #F3F0FF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: #F0F2F5;
+    color: var(--text);
+    line-height: 1.6;
+    padding: 40px;
+  }
+
+  /* ===== 页面标题 ===== */
+  .page-header {
+    max-width: 1100px;
+    margin: 0 auto 32px;
+    text-align: center;
+  }
+  .page-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .page-subtitle {
+    font-size: 14px;
+    color: var(--text-light);
+  }
+
+  /* ===== 方案叙述 ===== */
+  .section { max-width: 1100px; margin: 0 auto 40px; }
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .solution-narrative {
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    padding: 28px 32px;
+    font-size: 14px;
+    line-height: 2;
+  }
+  .solution-narrative p { margin-bottom: 12px; }
+  .solution-narrative p:last-child { margin-bottom: 0; }
+  .solution-narrative strong { color: var(--accent); }
+
+  /* ===== 卡片列表 ===== */
+  .design-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .design-card {
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+  }
+  .design-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .design-card h4 .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .design-card p {
+    font-size: 13px;
+    color: var(--text-light);
+    line-height: 1.7;
+  }
+
+  /* ===== 泳道流程图 ===== */
+  .flow-wrapper { margin-bottom: 48px; }
+  .flow-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .swimlane-flowchart {
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .swimlane-header {
+    display: grid;
+    border-bottom: 2px solid var(--border);
+    background: #F8F9FD;
+  }
+
+  .swimlane-label {
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .swimlane-label:last-child { border-right: none; }
+  .swimlane-label .role-icon {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: white; flex-shrink: 0;
+  }
+  .swimlane-label.student .role-icon { background: var(--student-color); }
+  .swimlane-label.student { color: var(--student-color); }
+  .swimlane-label.system .role-icon { background: var(--system-color); }
+  .swimlane-label.system { color: var(--system-color); }
+  .swimlane-label.teacher .role-icon { background: var(--teacher-color); }
+  .swimlane-label.teacher { color: var(--teacher-color); }
+
+  .swimlane-body { display: grid; position: relative; }
+
+  .swimlane-col {
+    padding: 20px 14px;
+    border-right: 1px solid #F0F0F0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    min-height: 80px;
+    position: relative;
+  }
+  .swimlane-col:last-child { border-right: none; }
+
+  /* 节点 */
+  .node {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; font-size: 12px; font-weight: 500;
+    line-height: 1.5; max-width: 170px;
+    min-height: 40px; padding: 7px 12px; z-index: 2;
+  }
+  .node.action {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+  }
+  .node.action.student { border-color: var(--student-color); color: var(--student-color); }
+  .node.action.system { border-color: var(--system-color); color: var(--system-color); }
+  .node.action.teacher { border-color: var(--teacher-color); color: var(--teacher-color); }
+
+  .node.action-fill {
+    border-radius: 8px; border: none;
+  }
+  .node.action-fill.student { background: var(--student-bg); color: var(--student-color); border: 1.5px solid var(--student-border); }
+  .node.action-fill.system { background: var(--system-bg); color: var(--system-color); border: 1.5px solid var(--system-border); }
+  .node.action-fill.teacher { background: var(--teacher-bg); color: var(--teacher-color); border: 1.5px solid var(--teacher-border); }
+
+  .node.decision {
+    background: var(--decision-bg);
+    border: 2px solid var(--decision-color);
+    color: var(--decision-color);
+    border-radius: 4px;
+    font-weight: 600;
+    padding: 8px 14px;
+  }
+  .node.decision::before {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 70px; height: 70px;
+    border: 2px solid var(--decision-color);
+    border-radius: 4px; z-index: -1;
+    background: var(--decision-bg);
+  }
+
+  .node.terminal {
+    border-radius: 22px;
+    padding: 8px 24px;
+    font-weight: 600;
+  }
+  .node.terminal.student { background: var(--student-color); color: white; }
+  .node.terminal.system { background: var(--system-color); color: white; }
+  .node.terminal.teacher { background: var(--teacher-color); color: white; }
+
+  .node.system-internal {
+    background: var(--system-bg);
+    border: 2px dashed var(--system-color);
+    border-radius: 8px;
+    color: var(--system-color);
+    font-size: 11px;
+    opacity: 0.85;
+  }
+  .node.spacer { visibility: hidden; border: none; background: none; min-height: 40px; }
+
+  .condition-label {
+    font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 4px;
+    position: absolute; z-index: 3;
+  }
+  .condition-label.yes { background: #E8F8F5; color: #00B894; }
+  .condition-label.no { background: #FFEAEA; color: #D63031; }
+  .condition-label.right { background: #EBF5FB; color: #0984E3; }
+
+  .arrows-svg {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 1;
+  }
+  .arrow-line {
+    fill: none; stroke: var(--arrow-color);
+    stroke-width: 1.5; marker-end: url(#arrowhead);
+  }
+  .arrow-line.dashed { stroke-dasharray: 5 3; stroke: #B2BEC3; }
+  .arrow-line.error { stroke: var(--error-color); stroke-dasharray: 5 3; marker-end: url(#arrowhead-error); }
+  .arrow-line.cross-lane { stroke: var(--arrow-color); stroke-width: 1.5; stroke-dasharray: 4 2; }
+  .arrow-line.green { stroke: #00B894; marker-end: url(#arrowhead-green); }
+  .arrow-line.teacher { stroke: var(--teacher-color); stroke-dasharray: 4 2; marker-end: url(#arrowhead-teacher); }
+
+  /* ===== 图例 ===== */
+  .legend {
+    max-width: 1100px; margin: 0 auto 40px;
+    background: white; border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    border: 1px solid var(--border); padding: 20px 28px;
+  }
+  .legend h3 { font-size: 14px; margin-bottom: 14px; color: var(--text); }
+  .legend-items { display: flex; flex-wrap: wrap; gap: 20px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-light); }
+  .legend-pill { border-radius: 22px; padding: 3px 14px; font-size: 11px; font-weight: 600; color: white; }
+  .legend-box { border-radius: 6px; border: 2px solid; padding: 4px 12px; font-size: 11px; font-weight: 500; }
+  .legend-dash { border-radius: 6px; border: 2px dashed; padding: 4px 12px; font-size: 11px; }
+  .legend-diamond {
+    width: 22px; height: 22px; border: 2px solid var(--decision-color);
+    background: var(--decision-bg); transform: rotate(45deg);
+  }
+
+  /* ===== 产品结构图 ===== */
+  .structure-wrapper { }
+  .structure-card {
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .structure-tier {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--border);
+  }
+  .structure-tier:last-child { border-bottom: none; }
+  .tier-label {
+    width: 100px;
+    padding: 16px 12px;
+    background: #F8F9FD;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--text-light);
+    text-align: center; gap: 2px;
+  }
+  .tier-label .tier-num { font-size: 20px; color: var(--accent); }
+  .tier-content {
+    flex: 1; padding: 14px 20px;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start;
+  }
+  .module-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    border: 1.5px solid;
+  }
+  .module-chip.layer-1 { background: var(--student-bg); border-color: var(--student-color); color: var(--student-color); }
+  .module-chip.layer-2 { background: var(--system-bg); border-color: var(--system-color); color: var(--system-color); }
+  .module-chip.layer-3 { background: var(--teacher-bg); border-color: var(--teacher-color); color: var(--teacher-color); }
+  .module-chip.layer-4 { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  .module-chip .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .module-desc { font-size: 11px; font-weight: 400; opacity: 0.7; margin-left: 2px; }
+
+  /* ===== 接口设计 ===== */
+  .api-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  .api-table th {
+    background: #F8F9FD; padding: 10px 14px;
+    text-align: left; font-weight: 600;
+    border-bottom: 2px solid var(--border);
+    color: var(--text);
+  }
+  .api-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #F0F0F0;
+    vertical-align: top;
+  }
+  .api-table tr:last-child td { border-bottom: none; }
+  .api-method {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 4px; font-size: 11px; font-weight: 700;
+  }
+  .api-method.get { background: #E8F8F5; color: #00B894; }
+  .api-method.post { background: #EBF5FB; color: #0984E3; }
+  .api-path { font-family: monospace; font-size: 12px; color: var(--text); }
+  .api-note { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-title">全局 IM 系统 — 产品方案设计</div>
+  <div class="page-subtitle">阶段二 · 方案设计</div>
+</div>
+
+<!-- ==================== 方案叙述 ==================== -->
+<div class="section">
+  <div class="section-title">一、整体方案思路</div>
+  <div class="solution-narrative">
+    <p><strong>入口设计：</strong>全局消息入口采用侧边悬浮按钮（右下角固定），始终可见，点击展开会话列表抽屉。入口仅对已购课用户展示，未购课用户完全隐藏。</p>
+    <p><strong>场景区分：</strong>系统通过当前页面上下文自动判断用户所处场景。<strong>课中场景</strong>（在课程/代码题页面）仅展示当前课程对应班主任的单一会话入口；<strong>课外场景</strong>（其他所有页面）展示全部班主任的会话列表，支持选择任意班主任发起对话。</p>
+    <p><strong>通知机制：</strong>复用现有 WebSocket 长连接，班主任在后台主动发消息时，通过 WebSocket 实时推送至学生端，在页面顶部弹出气泡通知，悬浮入口未读角标同步更新。</p>
+    <p><strong>会话聚合：</strong>每个班主任对应一个独立会话，会话按最新消息时间倒序排列。一期历史消息以历史记录形式并入对应会话，无需额外迁移。</p>
+  </div>
+</div>
+
+<!-- ==================== 核心设计决策 ==================== -->
+<div class="section">
+  <div class="section-title">二、核心设计决策</div>
+  <div class="design-cards">
+    <div class="design-card">
+      <h4>决策① 侧边悬浮入口 <span class="badge">推荐</span></h4>
+      <p>右下角固定悬浮按钮，不干扰主内容流，未读角标始终可见。相较顶部导航铃铛，触达路径更短；相较底部 Tab，不占用核心导航位。</p>
+    </div>
+    <div class="design-card">
+      <h4>决策② 场景感知会话列表 <span class="badge">推荐</span></h4>
+      <p>通过路由上下文判断课中/课外，课中仅展示当前班主任避免干扰学习，课外展示完整列表给予充分选择。列表从右滑出抽屉，不跳转页面保持沉浸。</p>
+    </div>
+    <div class="design-card">
+      <h4>决策③ WebSocket 复用推送 <span class="badge">推荐</span></h4>
+      <p>复用一期已建立的 WebSocket 长连接复用，零额外成本实现实时消息推送。气泡通知定位页面顶部，3秒自动消失，支持点击跳转。</p>
+    </div>
+    <div class="design-card">
+      <h4>决策④ 未读数上限 99+ <span class="badge">推荐</span></h4>
+      <p>每个会话独立累计未读数，悬浮入口角标展示所有会话未读总数。上限显示 99，避免数字溢出，兼顾大屏可读性与视觉简洁。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 业务流程图 ==================== -->
+<div class="section">
+  <div class="section-title">三、业务流程图</div>
+
+  <!-- 流程A：学生主动发消息 -->
+  <!-- 布局公式：每行 = 44px(节点) + 20px(gap) = 64px，行y中心 = 46 + i*64，viewBox高度 = rows*64+48 -->
+  <div class="flow-wrapper">
+    <div class="flow-title">流程 A：学生主动发消息</div>
+    <div class="swimlane-flowchart" id="flow-a">
+      <!-- 泳道头部：行号列 | 学生 | 系统 | 班主任 -->
+      <div class="swimlane-header" style="grid-template-columns: 60px 1fr 1fr 1fr;">
+        <div style="padding: 14px; border-right: 1px solid var(--border); font-size: 12px; color: #B2BEC3; text-align: center;">#</div>
+        <div class="swimlane-label student">
+          <div class="role-icon">🙋</div>学生
+        </div>
+        <div class="swimlane-label system">
+          <div class="role-icon">⚙️</div>系统
+        </div>
+        <div class="swimlane-label teacher">
+          <div class="role-icon">👨‍🏫</div>班主任
+        </div>
+      </div>
+
+      <!-- 泳道主体：9行节点，每行 gap=20px，节点高44px，viewBox高度=624 -->
+      <!-- 列x坐标: 行号=30, 学生≈170, 系统≈500, 班主任≈830 -->
+      <div class="swimlane-body" style="grid-template-columns: 60px 1fr 1fr 1fr; min-height: 624px;">
+        <svg class="arrows-svg" viewBox="0 0 1000 624" preserveAspectRatio="none" style="height: 624px;">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#636E72"/>
+            </marker>
+            <marker id="arrowhead-error" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#D63031"/>
+            </marker>
+            <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#00B894"/>
+            </marker>
+            <marker id="arrowhead-teacher" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#6C5CE7"/>
+            </marker>
+            <!--
+              逐行连接线（i=0~8, 行y中心=46+i*64）
+              i=0: y=46, i=1: y=110, i=2: y=174, i=3: y=238,
+              i=4: y=302, i=5: y=366, i=6: y=430, i=7: y=494, i=8: y=558
+            -->
+            <!-- Row0 → Row1: 进入页面 → 查看入口（学生列内） -->
+            <line x1="170" y1="46" x2="170" y2="88" class="arrow-line"/>
+            <!-- Row1 → Row2: 查看入口 → 点击按钮（学生列内） -->
+            <line x1="170" y1="154" x2="170" y2="174" class="arrow-line"/>
+            <!-- Row2 → Row3: 点击 → 检查购课状态（跨→系统列） -->
+            <line x1="170" y1="218" x2="500" y2="218" class="arrow-line cross-lane"/>
+            <!-- Row3 → Row4: 进入场景判断 -->
+            <line x1="500" y1="282" x2="500" y2="302" class="arrow-line"/>
+            <!-- Row4: 判断出口（是→右斜边x≈580）→ Row5: 选择会话（跨→学生列） -->
+            <line x1="580" y1="302" x2="580" y2="320" class="arrow-line green"/>
+            <line x1="580" y1="320" x2="170" y2="366" class="arrow-line green"/>
+            <!-- Row5 → Row6: 选择 → 输入消息（学生列内） -->
+            <line x1="170" y1="410" x2="170" y2="430" class="arrow-line"/>
+            <!-- Row6 → Row7: 输入 → 调用接口（跨→系统列） -->
+            <line x1="170" y1="474" x2="500" y2="474" class="arrow-line cross-lane"/>
+            <!-- Row7 → Row8: 调用 → 推送消息（系统列内） -->
+            <line x1="500" y1="538" x2="500" y2="558" class="arrow-line"/>
+            <!-- Row8: 推送 → 班主任收到（跨→班主任列） -->
+            <line x1="500" y1="558" x2="830" y2="558" class="arrow-line teacher"/>
+        </svg>
+
+        <!-- 行号列（每行一个编号，与节点行对齐） -->
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 8px; border-right: 1px solid #F0F0F0; font-size: 11px; color: #B2BEC3;">
+          <div style="height:44px; display:flex; align-items:center;">1</div>
+          <div style="height:44px; display:flex; align-items:center;">2</div>
+          <div style="height:44px; display:flex; align-items:center;">3</div>
+          <div style="height:44px; display:flex; align-items:center;">4</div>
+          <div style="height:44px; display:flex; align-items:center;">5</div>
+          <div style="height:44px; display:flex; align-items:center;">6</div>
+          <div style="height:44px; display:flex; align-items:center;">7</div>
+          <div style="height:44px; display:flex; align-items:center;">8</div>
+          <div style="height:44px; display:flex; align-items:center;">9</div>
+        </div>
+
+        <!-- 学生列（9行节点，gap=20px，padding-top=24px，与SVG行对应） -->
+        <div class="swimlane-col" style="padding-top: 24px;">
+          <div class="node terminal student" style="margin-top:0;">进入任意页面</div>
+          <div class="node action student">查看全局悬浮入口<br><span style="font-size:10px;opacity:0.65">右上角红点角标</span></div>
+          <div class="node action student">点击消息悬浮按钮</div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node action student">选择班主任会话<br><span style="font-size:10px;opacity:0.65">课中=当前 / 课外=列表</span></div>
+          <div class="node action-fill student">输入消息内容<br><span style="font-size:10px;opacity:0.65">点击发送</span></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+        </div>
+
+        <!-- 系统列 -->
+        <div class="swimlane-col" style="padding-top: 24px;">
+          <div class="node spacer" style="margin-top:0;"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node system-internal">检查用户购课状态<br><span style="font-size:10px">判断是否有班主任</span></div>
+          <div class="node decision" style="align-self:flex-start; margin-left:10px;">是否课中?</div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node action system">调用消息发送接口<br><span style="font-size:10px;opacity:0.65">写入消息记录</span></div>
+          <div class="node action system">WebSocket 推送消息<br><span style="font-size:10px;opacity:0.65">至班主任端</span></div>
+        </div>
+
+        <!-- 班主任列 -->
+        <div class="swimlane-col" style="padding-top: 24px;">
+          <div class="node spacer" style="margin-top:0;"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node action teacher">收到消息通知<br><span style="font-size:10px;opacity:0.65">在后台查看并回复</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 流程B：班主任主动触达 -->
+  <!-- 布局公式：每行=64px，行y中心=46+i*64，9行viewBox=624 -->
+  <div class="flow-wrapper">
+    <div class="flow-title">流程 B：班主任主动触达</div>
+    <div class="swimlane-flowchart" id="flow-b">
+      <div class="swimlane-header" style="grid-template-columns: 60px 1fr 1fr 1fr;">
+        <div style="padding: 14px; border-right: 1px solid var(--border); font-size: 12px; color: #B2BEC3; text-align: center;">#</div>
+        <div class="swimlane-label teacher">
+          <div class="role-icon">👨‍🏫</div>班主任
+        </div>
+        <div class="swimlane-label system">
+          <div class="role-icon">⚙️</div>系统
+        </div>
+        <div class="swimlane-label student">
+          <div class="role-icon">🙋</div>学生
+        </div>
+      </div>
+
+      <!-- 9行：viewBox高度=624 -->
+      <div class="swimlane-body" style="grid-template-columns: 60px 1fr 1fr 1fr; min-height: 624px;">
+        <svg class="arrows-svg" viewBox="0 0 1000 624" preserveAspectRatio="none" style="height: 624px;">
+          <defs>
+            <marker id="arrowhead2" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#636E72"/>
+            </marker>
+            <marker id="arrowhead-teacher2" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#6C5CE7"/>
+            </marker>
+            <marker id="arrowhead-student2" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#00B894"/>
+            </marker>
+            <marker id="arrowhead-system2" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#0984E3"/>
+            </marker>
+            <!--
+              列x: 班主任≈170, 系统≈500, 学生≈830
+              行y中心: i=0:46, i=1:110, i=2:174, i=3:238, i=4:302,
+                       i=5:366, i=6:430, i=7:494, i=8:558
+            -->
+            <!-- Row0 → Row1: 进入后台 → 选择学生（班主任列内） -->
+            <line x1="170" y1="46" x2="170" y2="88" class="arrow-line"/>
+            <!-- Row1 → Row2: 选择 → 输入消息（班主任列内） -->
+            <line x1="170" y1="154" x2="170" y2="174" class="arrow-line"/>
+            <!-- Row2 → Row3: 输入 → 确认发送（班主任列内） -->
+            <line x1="170" y1="218" x2="170" y2="238" class="arrow-line"/>
+            <!-- Row3 → Row4: 确认 → 消息已发送（班主任列内） -->
+            <line x1="170" y1="282" x2="170" y2="302" class="arrow-line"/>
+            <!-- Row4 → Row5: 发送 → 接收请求（跨→系统列） -->
+            <line x1="170" y1="302" x2="500" y2="302" class="arrow-line teacher"/>
+            <!-- Row5 → Row6: 请求 → 写入记录（系统列内） -->
+            <line x1="500" y1="366" x2="500" y2="430" class="arrow-line"/>
+            <!-- Row6 → Row7: 记录 → WebSocket推送（系统列内） -->
+            <line x1="500" y1="474" x2="500" y2="494" class="arrow-line"/>
+            <!-- Row7 → Row8: 推送 → 气泡通知（跨→学生列） -->
+            <line x1="500" y1="494" x2="830" y2="494" class="arrow-line cross-lane"/>
+            <!-- Row8: 气泡 → 未读角标+1（学生列内） -->
+            <line x1="830" y1="558" x2="830" y2="578" class="arrow-line"/>
+        </svg>
+
+        <!-- 行号列 -->
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 8px; border-right: 1px solid #F0F0F0; font-size: 11px; color: #B2BEC3;">
+          <div style="height:44px; display:flex; align-items:center;">1</div>
+          <div style="height:44px; display:flex; align-items:center;">2</div>
+          <div style="height:44px; display:flex; align-items:center;">3</div>
+          <div style="height:44px; display:flex; align-items:center;">4</div>
+          <div style="height:44px; display:flex; align-items:center;">5</div>
+          <div style="height:44px; display:flex; align-items:center;">6</div>
+          <div style="height:44px; display:flex; align-items:center;">7</div>
+          <div style="height:44px; display:flex; align-items:center;">8</div>
+          <div style="height:44px; display:flex; align-items:center;">9</div>
+        </div>
+
+        <!-- 班主任列（9行） -->
+        <div class="swimlane-col" style="padding-top: 24px;">
+          <div class="node terminal teacher" style="margin-top:0;">进入班主任后台</div>
+          <div class="node action teacher">选择学生用户<br><span style="font-size:10px;opacity:0.65">或选择课程班级</span></div>
+          <div class="node action-fill teacher">输入消息内容<br><span style="font-size:10px;opacity:0.65">点击发送</span></div>
+          <div class="node action teacher">确认发送</div>
+          <div class="node terminal teacher">消息已发送</div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+        </div>
+
+        <!-- 系统列 -->
+        <div class="swimlane-col" style="padding-top: 24px;">
+          <div class="node spacer" style="margin-top:0;"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node system-internal">接收发送请求<br><span style="font-size:10px">写入消息记录</span></div>
+          <div class="node system-internal">写入消息记录<br><span style="font-size:10px">会话表 + 消息表</span></div>
+          <div class="node action system">WebSocket 推送消息<br><span style="font-size:10px;opacity:0.65">实时下发至学生端</span></div>
+          <div class="node spacer"></div>
+        </div>
+
+        <!-- 学生列 -->
+        <div class="swimlane-col" style="padding-top: 24px;">
+          <div class="node spacer" style="margin-top:0;"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node action-fill student">弹出气泡通知<br><span style="font-size:10px;opacity:0.65">3秒自动消失</span></div>
+          <div class="node action student">未读角标 +1<br><span style="font-size:10px;opacity:0.65">悬浮入口更新</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 图例 ==================== -->
+<div class="legend">
+  <h3>📋 图例说明</h3>
+  <div class="legend-items">
+    <div class="legend-item">
+      <div class="legend-pill" style="background: var(--student-color);">起止</div><span>开始 / 结束</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-box" style="border-color: var(--student-color); color: var(--student-color);">操作</div><span>用户主动操作</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dash" style="border-color: var(--system-color); background: var(--system-bg); color: var(--system-color);">系统</div><span>后台系统操作</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-diamond"></div><span>条件判断</span>
+    </div>
+    <div class="legend-item">
+      <svg width="40" height="16"><line x1="0" y1="8" x2="40" y2="8" stroke="#636E72" stroke-width="1.5" marker-end="url(#arrowhead2)"/></svg><span>流程方向</span>
+    </div>
+    <div class="legend-item">
+      <svg width="40" height="16"><line x1="0" y1="8" x2="40" y2="8" stroke="#636E72" stroke-width="1.5" stroke-dasharray="4 2"/></svg><span>跨泳道交互</span>
+    </div>
+    <div class="legend-item">
+      <svg width="40" height="16"><line x1="0" y1="8" x2="40" y2="8" stroke="#D63031" stroke-width="1.5" stroke-dasharray="5 3"/></svg><span>异常/失败</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 产品结构图 ==================== -->
+<div class="section">
+  <div class="section-title">四、产品结构图 / 信息架构</div>
+  <div class="structure-wrapper">
+    <div class="structure-card">
+
+      <!-- 第一层：入口层 -->
+      <div class="structure-tier">
+        <div class="tier-label">
+          <div class="tier-num">L1</div>
+          入口层
+        </div>
+        <div class="tier-content">
+          <div class="module-chip layer-1">
+            <div class="chip-dot"></div>
+            全局悬浮入口按钮
+            <span class="module-desc">右下角固定定位，始终可见</span>
+          </div>
+          <div class="module-chip layer-1">
+            <div class="chip-dot"></div>
+            未读数角标
+            <span class="module-desc">展示总数，上限 99+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第二层：会话列表层 -->
+      <div class="structure-tier">
+        <div class="tier-label">
+          <div class="tier-num">L2</div>
+          列表层
+        </div>
+        <div class="tier-content">
+          <div class="module-chip layer-2">
+            <div class="chip-dot"></div>
+            会话列表抽屉
+            <span class="module-desc">右侧滑出，按最新消息倒序</span>
+          </div>
+          <div class="module-chip layer-2">
+            <div class="chip-dot"></div>
+            课中会话卡
+            <span class="module-desc">仅当前课程班主任</span>
+          </div>
+          <div class="module-chip layer-2">
+            <div class="chip-dot"></div>
+            课外会话卡
+            <span class="module-desc">全部班主任，支持切换</span>
+          </div>
+          <div class="module-chip layer-2">
+            <div class="chip-dot"></div>
+            消息搜索（未来扩展）
+            <span class="module-desc">支持按关键词检索历史</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第三层：聊天层 -->
+      <div class="structure-tier">
+        <div class="tier-label">
+          <div class="tier-num">L3</div>
+          聊天层
+        </div>
+        <div class="tier-content">
+          <div class="module-chip layer-3">
+            <div class="chip-dot"></div>
+            聊天详情页
+            <span class="module-desc">消息气泡、输入框、发送按钮</span>
+          </div>
+          <div class="module-chip layer-3">
+            <div class="chip-dot"></div>
+            消息气泡
+            <span class="module-desc">左右区分发送方，支持时间戳</span>
+          </div>
+          <div class="module-chip layer-3">
+            <div class="chip-dot"></div>
+            输入组件
+            <span class="module-desc">文本输入、发送快捷键</span>
+          </div>
+          <div class="module-chip layer-3">
+            <div class="chip-dot"></div>
+            历史消息记录
+            <span class="module-desc">滚动加载，翻页查看历史</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第四层：通知层 -->
+      <div class="structure-tier">
+        <div class="tier-label">
+          <div class="tier-num">L4</div>
+          通知层
+        </div>
+        <div class="tier-content">
+          <div class="module-chip layer-4">
+            <div class="chip-dot"></div>
+            气泡通知
+            <span class="module-desc">页面顶部弹出，3秒自动消失</span>
+          </div>
+          <div class="module-chip layer-4">
+            <div class="chip-dot"></div>
+            未读数同步
+            <span class="module-desc">WebSocket 实时更新角标</span>
+          </div>
+          <div class="module-chip layer-4">
+            <div class="chip-dot"></div>
+            会话未读标记
+            <span class="module-desc">各会话独立累计，显示红点+数字</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 后端接口设计 ==================== -->
+<div class="section">
+  <div class="section-title">五、后端接口设计（参考）</div>
+  <div class="structure-card" style="padding: 24px; overflow: auto;">
+    <table class="api-table">
+      <thead>
+        <tr>
+          <th style="width:80px;">方法</th>
+          <th style="width:240px;">接口路径</th>
+          <th>接口说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="api-method get">GET</span></td>
+          <td><span class="api-path">/api/im/conversations</span></td>
+          <td>
+            获取全局会话列表，返回该用户所有班主任的会话信息（含未读数、最新消息）
+            <div class="api-note">Query: scene=in_course（课中）/ scene=all（课外），用于过滤当前课程班主任</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="api-method get">GET</span></td>
+          <td><span class="api-path">/api/im/conversations/{id}/messages</span></td>
+          <td>
+            获取指定会话的消息历史，支持分页
+            <div class="api-note">Query: page, size，用于滚动加载历史消息</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="api-method post">POST</span></td>
+          <td><span class="api-path">/api/im/conversations/{id}/messages</span></td>
+          <td>
+            发送消息
+            <div class="api-note">Body: { content: string }，发送成功后触发 WebSocket 推送</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="api-method post">POST</span></td>
+          <td><span class="api-path">/api/im/conversations/{id}/read</span></td>
+          <td>
+            标记指定会话已读
+            <div class="api-note">将指定会话的未读数清零，同步更新悬浮入口角标总数</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="api-method get">GET</span></td>
+          <td><span class="api-path">/api/im/unread/total</span></td>
+          <td>
+            获取全局未读总数
+            <div class="api-note">用于前端初始化时设置悬浮入口角标，避免全量拉取会话列表</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>资源管理</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f7fa;
+    --bg3: #e8ecf2;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.12);
+    --text: #1a1a1a;
+    --text2: #5a6a7a;
+    --text3: #8a95a5;
+    --accent: #3b82f6;
+    --accent2: #2563eb;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --radius: 8px;
+    --radius2: 12px;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .header-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-title svg { width: 24px; height: 24px; color: var(--accent); }
+
+  /* Container */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    flex: 1;
+    max-width: 400px;
+  }
+  .search-box svg { width: 16px; height: 16px; color: var(--text3); flex-shrink: 0; }
+  .search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 14px;
+    color: var(--text);
+    width: 100%;
+  }
+  .search-box input::placeholder { color: var(--text3); }
+
+  /* Filter buttons */
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+  }
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .filter-btn:hover { color: var(--text); background: var(--bg3); }
+  .filter-btn.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* Primary button */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--bg3); border-color: rgba(0,0,0,0.2); }
+  .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+  .btn-success:hover { background: #16a34a; }
+
+  /* Table */
+  .table-wrapper {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    overflow: hidden;
+  }
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .table th {
+    text-align: left;
+    padding: 14px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+  }
+  .table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .table tr:last-child td { border-bottom: none; }
+  .table tr:hover td { background: var(--bg2); }
+
+  /* Resource name cell */
+  .resource-name {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .resource-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(59,130,246,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: 18px;
+  }
+  .resource-info { display: flex; flex-direction: column; gap: 2px; }
+  .resource-title { font-weight: 500; color: var(--text); }
+  .resource-date { font-size: 12px; color: var(--text3); }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .badge-pending {
+    background: rgba(245,158,11,0.12);
+    color: var(--warn);
+  }
+  .badge-pending .badge-dot { background: var(--warn); }
+  .badge-configured {
+    background: rgba(34,197,94,0.12);
+    color: var(--success);
+  }
+  .badge-configured .badge-dot { background: var(--success); }
+  .badge-published {
+    background: rgba(59,130,246,0.12);
+    color: var(--accent);
+  }
+  .badge-published .badge-dot { background: var(--accent); }
+  .badge-draft {
+    background: var(--bg3);
+    color: var(--text2);
+  }
+  .badge-draft .badge-dot { background: var(--text3); }
+
+  /* Action buttons */
+  .action-btns {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+  .action-btn svg { width: 16px; height: 16px; }
+  .action-btn.danger:hover { background: rgba(239,68,68,0.1); color: var(--danger); border-color: rgba(239,68,68,0.3); }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+  }
+  .pagination-info { font-size: 13px; color: var(--text2); }
+  .pagination-btns { display: flex; align-items: center; gap: 6px; }
+  .page-btn {
+    min-width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .page-btn:hover:not(:disabled) { background: var(--bg3); color: var(--text); }
+  .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Empty state */
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text3);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-title { font-size: 16px; font-weight: 500; color: var(--text2); margin-bottom: 8px; }
+  .empty-desc { font-size: 14px; margin-bottom: 20px; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+  }
+  .modal-overlay.show { opacity: 1; visibility: visible; }
+  .modal {
+    background: var(--bg);
+    border-radius: var(--radius2);
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    transform: translateY(20px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.show .modal { transform: translateY(0); }
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; }
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: var(--bg3);
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.15s;
+  }
+  .modal-close:hover { background: var(--bg2); color: var(--text); }
+  .modal-body { padding: 24px; }
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  /* Form */
+  .form-group { margin-bottom: 20px; }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 8px;
+  }
+  .form-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg2);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--accent); background: var(--bg); }
+  .form-input::placeholder { color: var(--text3); }
+
+  /* Checkbox */
+  .checkbox-group { display: flex; align-items: center; gap: 8px; }
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--text);
+    color: var(--bg);
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.3s;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+    </svg>
+    资源管理
+  </div>
+  <button class="btn btn-primary" onclick="openCreateModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    新建资源
+  </button>
+</header>
+
+<div class="container">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <!-- Search -->
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="搜索资源名称..." oninput="handleSearch()">
+    </div>
+
+    <!-- Config status filter -->
+    <div class="filter-group" id="configFilter">
+      <button class="filter-btn active" data-value="all" onclick="filterConfig(this)">全部状态</button>
+      <button class="filter-btn" data-value="configured" onclick="filterConfig(this)">已配置</button>
+      <button class="filter-btn" data-value="pending" onclick="filterConfig(this)">待配置</button>
+    </div>
+
+    <!-- Publish status filter -->
+    <div class="filter-group" id="publishFilter">
+      <button class="filter-btn active" data-value="all" onclick="filterPublish(this)">全部发布</button>
+      <button class="filter-btn" data-value="published" onclick="filterPublish(this)">已发布</button>
+      <button class="filter-btn" data-value="draft" onclick="filterPublish(this)">草稿</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>资源名称</th>
+          <th style="width:140px">配置状态</th>
+          <th style="width:140px">发布状态</th>
+          <th style="width:160px">操作</th>
+        </tr>
+      </thead>
+      <tbody id="resourceTableBody">
+        <!-- Rendered by JS -->
+      </tbody>
+    </table>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState" style="display:none">
+      <div class="empty-icon">📦</div>
+      <div class="empty-title">暂无资源</div>
+      <div class="empty-desc">点击"新建资源"开始创建您的第一个3D模型资源</div>
+      <button class="btn btn-primary" onclick="openCreateModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        新建资源
+      </button>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination">
+      <div class="pagination-info" id="paginationInfo">共 0 条</div>
+      <div class="pagination-btns" id="paginationBtns">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">新建资源</div>
+      <button class="modal-close" onclick="closeCreateModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">资源名称</label>
+        <input type="text" class="form-input" id="newResourceName" placeholder="请输入资源名称" onkeydown="handleCreateKeydown(event)">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeCreateModal()">取消</button>
+      <button class="btn btn-primary" onclick="createResource()">创建并进入配置</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">确认删除</div>
+      <button class="modal-close" onclick="closeDeleteModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text2);font-size:14px">确定要删除资源 "<strong id="deleteResourceName"></strong>" 吗？此操作不可恢复。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeDeleteModal()">取消</button>
+      <button class="btn" style="background:var(--danger);border-color:var(--danger);color:#fff" onclick="confirmDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- State ----
+const state = {
+  resources: [],
+  filteredResources: [],
+  currentPage: 1,
+  pageSize: 10,
+  searchQuery: '',
+  configFilter: 'all',
+  publishFilter: 'all',
+  deleteTargetId: null,
+};
+
+// ---- LocalStorage ----
+const STORAGE_KEY = 'resource_list_data';
+
+function saveResources() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.resources));
+}
+
+function loadResources() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  return saved ? JSON.parse(saved) : null;
+}
+
+// ---- Initialize demo data ----
+function initDemoData() {
+  // 尝试从本地存储加载数据
+  let demoResources = loadResources();
+
+  // 如果没有数据，使用默认演示数据
+  if (!demoResources || demoResources.length === 0) {
+    demoResources = [
+      { id: 'r1', name: '工业机械臂模型', configured: true, published: true, createdAt: '2026-05-01', modelFile: 'robot_arm.glb' },
+      { id: 'r2', name: '汽车发动机组件', configured: true, published: false, createdAt: '2026-05-02', modelFile: 'engine.glb' },
+      { id: 'r3', name: '建筑结构模型', configured: false, published: false, createdAt: '2026-05-03', modelFile: 'building.glb' },
+      { id: 'r4', name: '电子产品外壳', configured: true, published: true, createdAt: '2026-05-04', modelFile: 'electronics.glb' },
+      { id: 'r5', name: '家具套装模型', configured: false, published: false, createdAt: '2026-05-05', modelFile: 'furniture.glb' },
+      { id: 'r6', name: '医疗器械部件', configured: true, published: false, createdAt: '2026-05-06', modelFile: 'medical.glb' },
+      { id: 'r7', name: '航空航天零件', configured: true, published: true, createdAt: '2026-05-07', modelFile: 'aerospace.glb' },
+      { id: 'r8', name: '管道系统模型', configured: false, published: false, createdAt: '2026-05-08', modelFile: 'pipeline.glb' },
+      { id: 'r9', name: '电力设备模型', configured: true, published: true, createdAt: '2026-05-09', modelFile: 'power.glb' },
+      { id: 'r10', name: '模具设计原型', configured: false, published: false, createdAt: '2026-05-10', modelFile: 'mold.glb' },
+      { id: 'r11', name: '机器人底座', configured: true, published: false, createdAt: '2026-05-11', modelFile: 'robot_base.glb' },
+      { id: 'r12', name: '连接器组件', configured: false, published: false, createdAt: '2026-05-12', modelFile: 'connector.glb' },
+    ];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(demoResources));
+  }
+
+  state.resources = demoResources;
+  applyFilters();
+  render();
+}
+
+// ---- Filter logic ----
+function applyFilters() {
+  let filtered = [...state.resources];
+
+  // Search
+  if (state.searchQuery) {
+    const q = state.searchQuery.toLowerCase();
+    filtered = filtered.filter(r => r.name.toLowerCase().includes(q));
+  }
+
+  // Config filter
+  if (state.configFilter !== 'all') {
+    if (state.configFilter === 'configured') {
+      filtered = filtered.filter(r => r.configured);
+    } else if (state.configFilter === 'pending') {
+      filtered = filtered.filter(r => !r.configured);
+    }
+  }
+
+  // Publish filter
+  if (state.publishFilter !== 'all') {
+    if (state.publishFilter === 'published') {
+      filtered = filtered.filter(r => r.published);
+    } else if (state.publishFilter === 'draft') {
+      filtered = filtered.filter(r => !r.published);
+    }
+  }
+
+  state.filteredResources = filtered;
+  state.currentPage = 1;
+}
+
+// ---- Search ----
+function handleSearch() {
+  state.searchQuery = document.getElementById('searchInput').value.trim();
+  applyFilters();
+  render();
+}
+
+// ---- Filter buttons ----
+function filterConfig(btn) {
+  document.querySelectorAll('#configFilter .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.configFilter = btn.dataset.value;
+  applyFilters();
+  render();
+}
+
+function filterPublish(btn) {
+  document.querySelectorAll('#publishFilter .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.publishFilter = btn.dataset.value;
+  applyFilters();
+  render();
+}
+
+// ---- Render ----
+function render() {
+  const tbody = document.getElementById('resourceTableBody');
+  const emptyState = document.getElementById('emptyState');
+  const pagination = document.getElementById('pagination');
+
+  const total = state.filteredResources.length;
+  const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+  const start = (state.currentPage - 1) * state.pageSize;
+  const end = start + state.pageSize;
+  const pageData = state.filteredResources.slice(start, end);
+
+  if (total === 0) {
+    tbody.innerHTML = '';
+    emptyState.style.display = 'block';
+    pagination.style.display = 'none';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+  pagination.style.display = 'flex';
+
+  tbody.innerHTML = pageData.map(r => `
+    <tr>
+      <td>
+        <div class="resource-name">
+          <div class="resource-icon">📦</div>
+          <div class="resource-info">
+            <div class="resource-title">${escapeHtml(r.name)}</div>
+            <div class="resource-date">创建于 ${r.createdAt}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <span class="badge ${r.configured ? 'badge-configured' : 'badge-pending'}">
+          <span class="badge-dot"></span>
+          ${r.configured ? '已配置' : '待配置'}
+        </span>
+      </td>
+      <td>
+        <span class="badge ${r.published ? 'badge-published' : 'badge-draft'}">
+          <span class="badge-dot"></span>
+          ${r.published ? '已发布' : '草稿'}
+        </span>
+      </td>
+      <td>
+        <div class="action-btns">
+          <button class="action-btn" title="预览" onclick="previewResource('${r.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <button class="action-btn" title="编辑" onclick="editResource('${r.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="action-btn" title="${r.published ? '取消发布' : '发布'}" onclick="togglePublish('${r.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16,6 12,2 8,6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </button>
+          <button class="action-btn danger" title="删除" onclick="openDeleteModal('${r.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  // Pagination info
+  document.getElementById('paginationInfo').textContent =
+    `共 ${total} 条，第 ${state.currentPage}/${totalPages} 页`;
+
+  // Pagination buttons
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const btns = document.getElementById('paginationBtns');
+  let html = '';
+
+  // Prev button
+  html += `<button class="page-btn" onclick="goPage(${state.currentPage - 1})" ${state.currentPage === 1 ? 'disabled' : ''}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="15,18 9,12 15,6"/></svg>
+  </button>`;
+
+  // Page numbers
+  const maxVisible = 5;
+  let startPage = Math.max(1, state.currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  if (endPage - startPage < maxVisible - 1) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+
+  if (startPage > 1) {
+    html += `<button class="page-btn" onclick="goPage(1)">1</button>`;
+    if (startPage > 2) html += `<span style="color:var(--text3);padding:0 4px">...</span>`;
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    html += `<button class="page-btn ${i === state.currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) html += `<span style="color:var(--text3);padding:0 4px">...</span>`;
+    html += `<button class="page-btn" onclick="goPage(${totalPages})">${totalPages}</button>`;
+  }
+
+  // Next button
+  html += `<button class="page-btn" onclick="goPage(${state.currentPage + 1})" ${state.currentPage === totalPages ? 'disabled' : ''}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="9,18 15,12 9,6"/></svg>
+  </button>`;
+
+  btns.innerHTML = html;
+}
+
+function goPage(page) {
+  const totalPages = Math.ceil(state.filteredResources.length / state.pageSize);
+  if (page < 1 || page > totalPages) return;
+  state.currentPage = page;
+  render();
+}
+
+// ---- Modal functions ----
+function openCreateModal() {
+  document.getElementById('createModal').classList.add('show');
+  document.getElementById('newResourceName').value = '';
+  document.getElementById('newResourceName').focus();
+}
+
+function closeCreateModal() {
+  document.getElementById('createModal').classList.remove('show');
+}
+
+function handleCreateKeydown(e) {
+  if (e.key === 'Enter') createResource();
+}
+
+function createResource() {
+  const name = document.getElementById('newResourceName').value.trim();
+  if (!name) {
+    showToast('请输入资源名称');
+    return;
+  }
+
+  const newResource = {
+    id: 'r_' + Date.now(),
+    name: name,
+    configured: false,
+    published: false,
+    createdAt: new Date().toISOString().split('T')[0],
+    modelFile: 'new_model.glb',
+  };
+
+  state.resources.unshift(newResource);
+  saveResources();
+  applyFilters();
+  render();
+  closeCreateModal();
+  showToast(`资源 "${name}" 创建成功`);
+  // 创建后跳转到配置页面
+  setTimeout(() => {
+    window.location.href = `3d-assembly-platform.html?resourceId=${newResource.id}&mode=create`;
+  }, 800);
+}
+
+function openDeleteModal(id) {
+  const resource = state.resources.find(r => r.id === id);
+  if (!resource) return;
+  state.deleteTargetId = id;
+  document.getElementById('deleteResourceName').textContent = resource.name;
+  document.getElementById('deleteModal').classList.add('show');
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('show');
+  state.deleteTargetId = null;
+}
+
+function confirmDelete() {
+  if (!state.deleteTargetId) return;
+  const name = state.resources.find(r => r.id === state.deleteTargetId)?.name;
+  state.resources = state.resources.filter(r => r.id !== state.deleteTargetId);
+  saveResources();
+  applyFilters();
+  render();
+  closeDeleteModal();
+  showToast(`资源 "${name}" 已删除`);
+}
+
+// ---- Resource actions ----
+function previewResource(id) {
+  const resource = state.resources.find(r => r.id === id);
+  if (!resource) return;
+  showToast(`预览资源: ${resource.name}`);
+  // 实际场景：跳转到预览页面或打开预览弹窗
+  // window.location.href = `preview.html?id=${id}`;
+}
+
+function editResource(id) {
+  const resource = state.resources.find(r => r.id === id);
+  if (!resource) return;
+  // 保存当前资源数据到本地存储
+  saveResources();
+  // 跳转到配置页面
+  window.location.href = `3d-assembly-platform.html?resourceId=${id}&mode=edit`;
+}
+
+function togglePublish(id) {
+  const resource = state.resources.find(r => r.id === id);
+  if (!resource) return;
+  resource.published = !resource.published;
+  saveResources();
+  render();
+  showToast(resource.published ? `"${resource.name}" 已发布` : `"${resource.name}" 已取消发布`);
+}
+
+// ---- Utilities ----
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// Close modals on outside click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) {
+      overlay.classList.remove('show');
+    }
+  });
+});
+
+// ---- Init ----
+initDemoData();
+</script>
+</body>
+</html>

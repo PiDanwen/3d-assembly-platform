@@ -1,0 +1,2119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D模型搭建配置平台</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    /* 白色主题 */
+    --bg: #ffffff;
+    --bg2: #f5f7fa;
+    --bg3: #e8ecf2;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.12);
+    --text: #1a1a1a;
+    --text2: #5a6a7a;
+    --text3: #8a95a5;
+    --accent: #3b82f6;
+    --accent2: #2563eb;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --radius: 8px;
+    --radius2: 12px;
+  }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; height: 100vh; overflow: hidden; }
+
+  /* Layout */
+  .app { display: grid; grid-template-columns: 280px 1fr 320px; grid-template-rows: 56px 1fr; height: calc(100vh - 72px); }
+
+  /* Header */
+  .header { grid-column: 1/-1; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .logo { font-size: 16px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+  .logo svg { width: 24px; height: 24px; }
+  .header-actions { margin-left: auto; display: flex; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { background: var(--bg3); border-color: rgba(0,0,0,0.2); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+  .btn-success:hover { background: #16a34a; }
+  .btn-warn { background: var(--warn); border-color: var(--warn); color: #fff; }
+  .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* Left Panel */
+  .left-panel { background: var(--bg2); border-right: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; }
+  .panel-header { padding: 14px 16px 10px; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--bg); }
+  .badge { font-size: 11px; background: var(--accent); color: #fff; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .part-search { padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .part-search input { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 13px; padding: 8px 12px; outline: none; }
+  .part-search input:focus { border-color: var(--accent); }
+  .part-list { flex: 1; overflow-y: auto; padding: 8px; }
+  .part-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); cursor: pointer; transition: all 0.12s; margin-bottom: 2px; border: 1px solid transparent; background: var(--bg); }
+  .part-item:hover { background: var(--bg3); border-color: var(--border2); }
+  .part-item.active { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); }
+  .part-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .part-info { flex: 1; min-width: 0; }
+  .part-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .part-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .part-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .status-done { background: var(--success); }
+  .status-pending { background: var(--text3); }
+  .status-warn { background: var(--warn); }
+
+  /* Center - 3D Viewport */
+  .viewport { position: relative; background: #e8ecf2; overflow: hidden; }
+  #canvas3d { width: 100%; height: 100%; display: block; }
+  .viewport-toolbar { position: absolute; top: 14px; left: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .viewport-toolbar .btn { padding: 10px; min-width: 38px; justify-content: center; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid var(--border); }
+  .viewport-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); font-size: 12px; color: var(--text2); background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 20px; pointer-events: none; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .viewport-mode-tag { position: absolute; top: 14px; right: 14px; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px; background: rgba(255,255,255,0.92); border: 1px solid var(--border); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+  /* Upload overlay */
+  .upload-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #e8ecf2; cursor: pointer; transition: background 0.2s; }
+  .upload-overlay:hover, .upload-overlay.drag-over { background: #dde4ed; }
+  .upload-zone { border: 2px dashed rgba(59,130,246,0.4); border-radius: 16px; padding: 48px 64px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; transition: border-color 0.2s; background: rgba(255,255,255,0.8); }
+  .upload-overlay:hover .upload-zone, .upload-overlay.drag-over .upload-zone { border-color: rgba(59,130,246,0.7); }
+  .upload-icon { width: 64px; height: 64px; color: var(--accent); opacity: 0.7; }
+  .upload-title { font-size: 18px; font-weight: 600; color: var(--text); }
+  .upload-sub { font-size: 13px; color: var(--text2); }
+  .upload-formats { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+  /* Right Panel */
+  .right-panel { background: var(--bg2); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .panel-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .tab { flex: 1; text-align: center; padding: 14px 8px; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+  .tab:hover { color: var(--text); }
+  .panel-content { flex: 1; overflow-y: auto; padding: 16px; background: var(--bg); }
+
+  /* Properties */
+  .prop-section { margin-bottom: 20px; }
+  .prop-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .prop-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
+  .prop-label { font-size: 13px; color: var(--text2); flex-shrink: 0; width: 80px; }
+  .prop-value { font-size: 14px; color: var(--text); font-weight: 500; }
+  .prop-input { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 13px; padding: 8px 10px; outline: none; width: 0; min-width: 0; }
+  .prop-input:focus { border-color: var(--accent); }
+  .xyz-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .xyz-group { display: flex; flex-direction: column; gap: 4px; }
+  .xyz-label { font-size: 11px; color: var(--text3); text-align: center; font-weight: 500; }
+  .xyz-input { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 13px; padding: 8px; outline: none; text-align: center; width: 100%; }
+  .xyz-input:focus { border-color: var(--accent); }
+  .x-label { color: #ef4444; }
+  .y-label { color: #22c55e; }
+  .z-label { color: #3b82f6; }
+  .x-input:focus { border-color: #ef4444; }
+  .y-input:focus { border-color: #22c55e; }
+  .z-input:focus { border-color: #3b82f6; }
+
+  /* Direction selector */
+  .direction-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .dir-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all 0.12s; font-size: 11px; color: var(--text2); }
+  .dir-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,0.08); }
+  .dir-btn.selected { background: rgba(59,130,246,0.12); border-color: var(--accent); color: var(--accent); }
+  .dir-btn svg { width: 20px; height: 20px; }
+
+  /* Collision warning */
+  .collision-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius); padding: 10px 12px; margin-top: 10px; font-size: 12px; color: #ef4444; display: none; }
+  .collision-box.show { display: block; }
+
+  /* Assembly steps */
+  .step-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); position: relative; }
+  .step-item:last-child { border-bottom: none; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--bg2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--text2); flex-shrink: 0; margin-top: 2px; }
+  .step-done .step-num { background: rgba(34,197,94,0.12); border-color: var(--success); color: var(--success); }
+  .step-active .step-num { background: rgba(59,130,246,0.12); border-color: var(--accent); color: var(--accent); }
+  .step-body { flex: 1; }
+  .step-title { font-size: 14px; font-weight: 500; }
+  .step-desc { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .step-dir-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+  /* Preview animation bar - 白色主题 */
+  .preview-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px 24px; border-top: 1px solid var(--border); background: var(--bg); box-shadow: 0 -2px 12px rgba(0,0,0,0.08); z-index: 100; }
+  .preview-controls { display: flex; align-items: center; gap: 16px; }
+  .preview-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
+  .preview-btn:hover { background: var(--accent2); }
+  .progress-track { flex: 1; height: 6px; background: var(--bg3); border-radius: 3px; cursor: pointer; position: relative; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.2s; }
+  .progress-thumb { position: absolute; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; background: #fff; border-radius: 50%; border: 2px solid var(--accent); margin-left: -7px; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+  .preview-time { font-size: 12px; color: var(--text3); white-space: nowrap; }
+
+  /* 手动步骤预览按钮 - 白色主题 */
+  .step-nav-btn { padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border2); background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; font-weight: 500; }
+  .step-nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,0.08); }
+  .step-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .step-nav-btn svg { width: 16px; height: 16px; }
+  .step-nav-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .step-nav-btn.primary:hover:not(:disabled) { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .step-nav-btn.danger { border-color: var(--danger); color: var(--danger); }
+  .step-nav-btn.danger:hover { background: rgba(239,68,68,0.08); }
+
+  /* Loading progress */
+  .loading-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 10; }
+  .loading-bar-wrap { width: 280px; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .loading-bar { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
+  .loading-text { font-size: 14px; color: var(--text2); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* No part selected state */
+  .empty-state { padding: 32px 16px; text-align: center; color: var(--text3); font-size: 14px; }
+  .empty-icon { font-size: 40px; margin-bottom: 14px; opacity: 0.5; }
+
+  /* Color preview box */
+  .color-swatch { width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0; }
+
+  /* Tooltip */
+  [title] { cursor: help; }
+
+  /* Animation keyframes */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin360 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.2s ease; }
+
+  /* 旋转轴按钮激活 */
+  .rot-axis-btn.active { border-color: var(--accent) !important; background: rgba(59,130,246,0.12) !important; color: var(--accent) !important; }
+
+  /* 360° 旋转预览面板 - 白色主题 */
+  #rotatePanel { background: rgba(255,255,255,0.95) !important; border: 1px solid var(--border) !important; box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="btn" id="btnBackToList" onclick="backToResourceList()" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polyline points="15,18 9,12 15,6"/></svg>
+        返回列表
+      </button>
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 3L20 7.5V16.5L12 21L4 16.5V7.5L12 3Z"/>
+          <path d="M12 3V21M4 7.5L12 12L20 7.5"/>
+        </svg>
+        3D Assembly Studio
+      </div>
+      <span id="fileName" style="font-size:13px;color:var(--text3)"></span>
+      <span id="resourceNameTag" style="display:none;font-size:13px;color:var(--accent);font-weight:500;padding:4px 10px;background:rgba(59,130,246,0.1);border-radius:20px"></span>
+    </div>
+    <div class="header-actions">
+      <button class="btn" id="btnUploadNew" onclick="resetAll()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        上传模型
+      </button>
+      <button class="btn btn-success" id="btnExport" onclick="exportConfig()" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 10l-4 4-4-4M12 14V3"/></svg>
+        导出配置
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Panel: Parts List -->
+  <aside class="left-panel">
+    <div class="panel-header">
+      零件列表
+      <span class="badge" id="partCount">0</span>
+    </div>
+    <div class="part-search">
+      <input type="text" placeholder="搜索零件..." id="searchInput" oninput="filterParts(this.value)">
+    </div>
+    <div class="part-list" id="partList">
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        上传3D模型文件后<br>零件将在此显示
+      </div>
+    </div>
+  </aside>
+
+  <!-- Center: 3D Viewport -->
+  <div class="viewport" id="viewport">
+    <!-- Upload overlay -->
+    <div class="upload-overlay" id="uploadOverlay"
+         onclick="triggerUpload()"
+         ondragover="handleDragOver(event)"
+         ondragleave="handleDragLeave(event)"
+         ondrop="handleDrop(event)">
+      <div class="upload-zone">
+        <svg class="upload-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="8" y="8" width="48" height="48" rx="8"/>
+          <path d="M32 16v24M24 24l8-8 8 8"/>
+          <path d="M16 44h32"/>
+          <rect x="22" y="36" width="20" height="12" rx="2" fill="currentColor" opacity="0.1"/>
+        </svg>
+        <div class="upload-title">上传 3D 模型文件</div>
+        <div class="upload-sub">拖拽文件到此处，或点击选择文件</div>
+        <div class="upload-formats">支持格式：GLB、GLTF、OBJ、FBX（演示模式支持所有格式）</div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="event.stopPropagation(); loadDemoModel()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polygon points="5,3 19,12 5,21"/></svg>
+          加载演示模型
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display:none">
+      <svg style="width:40px;height:40px;color:var(--accent);animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      </svg>
+      <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar" style="width:0%"></div></div>
+      <div class="loading-text" id="loadingText">正在解析模型...</div>
+    </div>
+
+    <canvas id="canvas3d" style="display:none"></canvas>
+    <div class="viewport-toolbar" id="viewportToolbar" style="display:none">
+      <button class="btn" onclick="resetCamera()" title="重置视角">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M3 12a9 9 0 1018 0A9 9 0 003 12zM12 8v4l3 3"/></svg>
+      </button>
+      <button class="btn" onclick="toggleWireframe()" title="线框模式" id="btnWireframe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polygon points="12,2 22,20 2,20"/><line x1="2" y1="20" x2="22" y2="20"/><line x1="12" y1="2" x2="2" y2="20"/><line x1="12" y1="2" x2="22" y2="20"/></svg>
+      </button>
+      <button class="btn" onclick="toggleGrid()" title="网格" id="btnGrid">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </button>
+      <button class="btn" onclick="focusSelected()" title="聚焦选中" id="btnFocus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4 12H2M22 12h-2M6.34 6.34L5 5M19 5l-1.34 1.34M6.34 17.66L5 19M19 19l-1.34-1.34"/></svg>
+      </button>
+      <button class="btn" onclick="toggleAutoRotate()" title="360° 旋转预览" id="btnAutoRotate">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M12 2a10 10 0 0110 10"/><path d="M22 12a10 10 0 01-10 10"/><path d="M12 22a10 10 0 01-10-10"/><path d="M2 12a10 10 0 0110-10"/><polyline points="22,7 22,12 17,12"/></svg>
+      </button>
+    </div>
+    <div class="viewport-hint" id="viewportHint" style="display:none">左键旋转 · 右键平移 · 滚轮缩放 · 点击选择零件</div>
+    <div class="viewport-mode-tag" id="viewportModeTag" style="display:none">查看模式</div>
+
+    <!-- 360° 旋转预览面板 -->
+    <div id="rotatePanel" style="display:none;position:absolute;bottom:20px;right:16px;background:rgba(22,27,39,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 16px;width:210px;backdrop-filter:blur(6px);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:7px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="width:14px;height:14px;animation:spin360 2s linear infinite" id="rotatePanelIcon"><path d="M12 2a10 10 0 0110 10"/><path d="M22 12a10 10 0 01-10 10"/><path d="M12 22a10 10 0 01-10-10"/><path d="M2 12a10 10 0 0110-10"/><polyline points="22,7 22,12 17,12"/></svg>
+          <span style="font-size:12px;font-weight:600;color:var(--accent)">360° 旋转预览</span>
+        </div>
+        <button onclick="toggleAutoRotate()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:0 2px">✕</button>
+      </div>
+      <div id="rotatePanelPartName" style="font-size:13px;color:var(--text);margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:11px;color:var(--text3)">旋转速度</span>
+          <span style="font-size:11px;color:var(--text2)" id="rotateSpeedLabel">1.0×</span>
+        </div>
+        <input type="range" id="rotateSpeedSlider" min="0.2" max="3.0" step="0.1" value="1.0"
+          style="width:100%;accent-color:var(--accent)"
+          oninput="onRotateSpeedChange(this.value)">
+      </div>
+      <div style="margin-bottom:10px">
+        <span style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px">旋转轴</span>
+        <div style="display:flex;gap:6px">
+          <button class="rot-axis-btn" data-axis="Y" onclick="setRotateAxis(this)" style="flex:1;padding:5px 4px;border-radius:6px;border:1px solid var(--accent);background:rgba(79,142,247,0.15);color:var(--accent);font-size:12px;cursor:pointer">Y 轴</button>
+          <button class="rot-axis-btn" data-axis="X" onclick="setRotateAxis(this)" style="flex:1;padding:5px 4px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;cursor:pointer">X 轴</button>
+          <button class="rot-axis-btn" data-axis="Z" onclick="setRotateAxis(this)" style="flex:1;padding:5px 4px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;cursor:pointer">Z 轴</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="pauseResumeRotate()" id="btnPauseRotate" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px;cursor:pointer">⏸ 暂停</button>
+        <button onclick="resetRotate()" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px;cursor:pointer">↺ 复位</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel: Properties -->
+  <aside class="right-panel">
+    <div class="panel-tabs">
+      <div class="tab active" id="tabProps" onclick="switchTab('props')">零件属性</div>
+      <div class="tab" id="tabSteps" onclick="switchTab('steps')">装配步骤</div>
+    </div>
+
+    <!-- Props Tab -->
+    <div class="panel-content" id="panelProps">
+      <div id="noSelectState" class="empty-state">
+        <div class="empty-icon">🔩</div>
+        从左侧列表选择零件<br>查看和编辑属性
+      </div>
+      <div id="propEditor" style="display:none" class="fade-in">
+        <div class="prop-section">
+          <div class="prop-title">基本信息</div>
+          <div class="prop-row">
+            <span class="prop-label">名称</span>
+            <input class="prop-input" id="propName" type="text">
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">序号</span>
+            <span class="prop-value" id="propOrder">-</span>
+          </div>
+        </div>
+
+        <div class="prop-section">
+          <div class="prop-title">安装位置（相对坐标）</div>
+          <div class="xyz-grid">
+            <div class="xyz-group">
+              <span class="xyz-label x-label">X</span>
+              <input class="xyz-input x-input" id="posX" type="number" step="0.1" onchange="updatePosition()">
+            </div>
+            <div class="xyz-group">
+              <span class="xyz-label y-label">Y</span>
+              <input class="xyz-input y-input" id="posY" type="number" step="0.1" onchange="updatePosition()">
+            </div>
+            <div class="xyz-group">
+              <span class="xyz-label z-label">Z</span>
+              <input class="xyz-input z-input" id="posZ" type="number" step="0.1" onchange="updatePosition()">
+            </div>
+          </div>
+        </div>
+
+        <div class="prop-section">
+          <div class="prop-title">安装旋转（欧拉角 deg）</div>
+          <div class="xyz-grid">
+            <div class="xyz-group">
+              <span class="xyz-label x-label">RX</span>
+              <input class="xyz-input x-input" id="rotX" type="number" step="1" onchange="updateRotation()">
+            </div>
+            <div class="xyz-group">
+              <span class="xyz-label y-label">RY</span>
+              <input class="xyz-input y-input" id="rotY" type="number" step="1" onchange="updateRotation()">
+            </div>
+            <div class="xyz-group">
+              <span class="xyz-label z-label">RZ</span>
+              <input class="xyz-input z-input" id="rotZ" type="number" step="1" onchange="updateRotation()">
+            </div>
+          </div>
+        </div>
+
+        <div class="prop-section">
+          <div class="prop-title">安装方向</div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:8px">指定此零件的安装进入方向（支持自定义填写）</p>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+              <button class="dir-btn" data-dir="+X" onclick="selectDir(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M15 6l6 6-6 6"/></svg>
+                +X 正向
+              </button>
+              <button class="dir-btn" data-dir="-X" onclick="selectDir(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M9 6L3 12l6 6"/></svg>
+                -X 负向
+              </button>
+              <button class="dir-btn" data-dir="+Y" onclick="selectDir(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M6 9l6-6 6 6"/></svg>
+                +Y 上方
+              </button>
+              <button class="dir-btn" data-dir="-Y" onclick="selectDir(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M18 15l-6 6-6-6"/></svg>
+                -Y 下方
+              </button>
+              <button class="dir-btn" data-dir="+Z" onclick="selectDir(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M4 12H2M22 12h-2"/></svg>
+                +Z 前方
+              </button>
+              <button class="dir-btn" data-dir="-Z" onclick="selectDir(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41"/></svg>
+                -Z 后方
+              </button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:12px;color:var(--text2)">自定义:</span>
+              <input class="prop-input" id="customDirInput" type="text" placeholder="如: +X, -Y, (1,0.5,1) 等" style="flex:1" onchange="applyCustomDir()">
+              <button class="btn" style="padding:6px 10px;font-size:12px" onclick="applyCustomDir()">应用</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="prop-section">
+          <div class="prop-title">装配顺序</div>
+          <div class="prop-row">
+            <span class="prop-label">步骤序号</span>
+            <input class="prop-input" id="propStep" type="number" min="1" style="flex:none;width:70px" onchange="updateStep()">
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">操作说明</span>
+            <input class="prop-input" id="propNote" type="text" placeholder="可选备注..." onchange="updateNote()">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;margin-top:8px;justify-content:center" onclick="applyPartConfig()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M20 6L9 17l-5-5"/></svg>
+          应用配置
+        </button>
+
+        <!-- 零件 360° 预览窗口 -->
+        <div class="prop-section" id="miniPreviewSection" style="margin-top:18px;margin-bottom:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div class="prop-title" style="margin-bottom:0">360° 零件预览</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:11px;color:var(--text3)">速度</span>
+              <input type="range" id="miniSpeedSlider" min="0.2" max="3.0" step="0.1" value="1.5"
+                style="width:60px;accent-color:var(--accent)" oninput="onMiniSpeedChange(this.value)">
+              <span style="font-size:11px;color:var(--text2)" id="miniSpeedLabel">1.5×</span>
+            </div>
+          </div>
+          <div style="position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:#e8ecf2">
+            <canvas id="miniCanvas" width="260" height="180" style="display:block;width:100%;height:auto"></canvas>
+            <div id="miniLoadingState" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(232,236,242,0.95)">
+              <svg style="width:28px;height:28px;color:var(--text3);animation:spin 1.5s linear infinite;margin-bottom:8px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              <span style="font-size:12px;color:var(--text2)">选中零件以预览</span>
+            </div>
+            <div style="position:absolute;bottom:6px;left:8px;display:flex;align-items:center;gap:5px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="width:12px;height:12px;animation:spin360 3s linear infinite" id="miniSpinIcon">
+                <path d="M12 2a10 10 0 0110 10"/><path d="M22 12a10 10 0 01-10 10"/><path d="M12 22a10 10 0 01-10-10"/><path d="M2 12a10 10 0 0110-10"/><polyline points="22,7 22,12 17,12"/>
+              </svg>
+              <span style="font-size:10px;color:var(--text3)" id="miniPartName">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Steps Tab -->
+    <div class="panel-content" id="panelSteps" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:12px;color:var(--text2)">装配步骤顺序</span>
+        <button class="btn btn-primary" style="padding:5px 10px;font-size:12px" onclick="autoSortSteps()">自动排序</button>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:12px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
+        点击下方步骤可跳转到对应预览，零件会从安装方向飞入到位
+      </div>
+      <div id="stepsList"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Preview bar - 手动步骤预览 -->
+<div class="preview-bar" id="previewBar" style="display:none">
+  <div style="display:flex;align-items:center;gap:16px">
+    <!-- 左侧：标题和步骤 -->
+    <div style="min-width:140px">
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px" id="previewLabel">搭建预览</div>
+      <div style="font-size:13px;color:var(--accent);font-weight:500" id="previewStepLabel">步骤 0/0</div>
+    </div>
+
+    <!-- 中间：按钮组 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <button class="step-nav-btn" id="btnPrevStep" onclick="prevStep()" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+        上一步
+      </button>
+      <button class="step-nav-btn primary" id="btnNextStep" onclick="nextStep()">
+        下一步
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
+      </button>
+    </div>
+
+    <!-- 进度条 -->
+    <div class="progress-track" id="progressTrack" onclick="seekPreview(event)" style="flex:1;margin:0 8px">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      <div class="progress-thumb" id="progressThumb" style="left:0%"></div>
+    </div>
+
+    <!-- 右侧：退出和重置 -->
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <button class="step-nav-btn" onclick="resetPreview()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15"/></svg>
+        重置
+      </button>
+      <button class="step-nav-btn danger" onclick="exitPreview()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        退出
+      </button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".glb,.gltf,.obj,.fbx" style="display:none" onchange="handleFileUpload(event)">
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+
+// ---- State ----
+const state = {
+  parts: [],
+  selectedPartId: null,
+  isPreviewMode: false,
+  previewStep: 0,
+  previewMaxStep: 0,
+  wireframe: false,
+  gridVisible: true,
+  configDirty: false,
+};
+
+// ---- Three.js setup ----
+const canvas = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xe8ecf2);
+
+// Grid - 白色主题下用浅色
+const gridHelper = new THREE.GridHelper(10, 20, 0xc8d0db, 0xd8dfe8);
+scene.add(gridHelper);
+
+const camera = new THREE.PerspectiveCamera(50, 1, 0.01, 1000);
+camera.position.set(3, 2.5, 4);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 0.5;
+controls.maxDistance = 50;
+
+// Lights
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+dirLight.position.set(5, 10, 7);
+dirLight.castShadow = true;
+scene.add(dirLight);
+const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+fillLight.position.set(-5, -2, -5);
+scene.add(fillLight);
+
+// Grid 已在前面初始化
+
+// Raycaster
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+// Highlight materials
+const highlightMat = new THREE.MeshStandardMaterial({ color: 0x4f8ef7, emissive: 0x1a3a80, roughness: 0.4, metalness: 0.3 });
+const dimMat = new THREE.MeshStandardMaterial({ color: 0x333344, roughness: 0.8, transparent: true, opacity: 0.25 });
+const selectedMat = new THREE.MeshStandardMaterial({ color: 0x2ec97c, emissive: 0x0a3020, roughness: 0.3, metalness: 0.4 });
+
+// Model root
+const modelRoot = new THREE.Group();
+scene.add(modelRoot);
+
+// Arrow helpers for direction
+let directionArrow = null;
+
+function showDirectionArrow(part) {
+  if (directionArrow) { scene.remove(directionArrow); directionArrow = null; }
+  if (!part || !part.installDir) return;
+  const dirMap = {
+    '+X': new THREE.Vector3(1,0,0), '-X': new THREE.Vector3(-1,0,0),
+    '+Y': new THREE.Vector3(0,1,0), '-Y': new THREE.Vector3(0,-1,0),
+    '+Z': new THREE.Vector3(0,0,1), '-Z': new THREE.Vector3(0,0,-1),
+  };
+  const dir = dirMap[part.installDir];
+  if (!dir) return;
+  const origin = part.mesh ? part.mesh.position.clone() : new THREE.Vector3();
+  const arrowHelper = new THREE.ArrowHelper(dir, origin, 1.2, 0xffd700, 0.3, 0.15);
+  scene.add(arrowHelper);
+  directionArrow = arrowHelper;
+}
+
+// Expose to window
+window.threeScene = scene;
+window.threeCamera = camera;
+window.threeControls = controls;
+window.threeRenderer = renderer;
+window.showDirectionArrow = showDirectionArrow;
+window.THREE = THREE;
+
+// ---- Mini 360° Preview Setup ----
+const miniCanvas = document.getElementById('miniCanvas');
+const miniRenderer = new THREE.WebGLRenderer({ canvas: miniCanvas, antialias: true, alpha: true });
+miniRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+miniRenderer.setSize(260, 180);
+miniRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+miniRenderer.toneMappingExposure = 1.2;
+
+const miniScene = new THREE.Scene();
+miniScene.background = new THREE.Color(0xe8ecf2);
+
+// Mini camera
+const miniCamera = new THREE.PerspectiveCamera(45, 260/180, 0.01, 100);
+miniCamera.position.set(0, 0.5, 2.5);
+
+// Mini lights
+const miniAmbient = new THREE.AmbientLight(0xffffff, 0.6);
+miniScene.add(miniAmbient);
+const miniDirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+miniDirLight.position.set(5, 10, 7);
+miniScene.add(miniDirLight);
+const miniFillLight = new THREE.DirectionalLight(0x87CEEB, 0.4);
+miniFillLight.position.set(-5, -2, -5);
+miniScene.add(miniFillLight);
+
+// Mini grid
+const miniGrid = new THREE.GridHelper(4, 8, 0xc8d0db, 0xd8dfe8);
+miniScene.add(miniGrid);
+
+// Mini preview state
+const miniState = {
+  partMesh: null,     // Clone of current part mesh
+  angle: 0,           // Rotation angle
+  speed: 1.5,         // Rotation speed multiplier
+  active: false,      // Is currently rotating
+};
+
+// Mini render loop
+function animateMini() {
+  requestAnimationFrame(animateMini);
+  if (miniState.active && miniState.partMesh) {
+    miniState.angle += 0.018 * miniState.speed; // ~60fps
+    miniState.partMesh.rotation.y = miniState.angle;
+    miniRenderer.render(miniScene, miniCamera);
+  } else {
+    miniRenderer.render(miniScene, miniCamera);
+  }
+}
+animateMini();
+
+// Update mini preview when part is selected
+function updateMiniPreview(part) {
+  if (!part || !part.mesh) {
+    hideMiniPreview();
+    return;
+  }
+
+  // Hide loading state
+  document.getElementById('miniLoadingState').style.display = 'none';
+  document.getElementById('miniPartName').textContent = part.name;
+  document.getElementById('miniSpinIcon').style.display = 'block';
+
+  // Remove old mesh if exists
+  if (miniState.partMesh) {
+    miniScene.remove(miniState.partMesh);
+    miniState.partMesh = null;
+  }
+
+  // Clone the part mesh
+  const clonedGroup = part.mesh.clone(true);
+
+  // Compute bounding box of original mesh (world space)
+  const box = new THREE.Box3().setFromObject(clonedGroup);
+  const size = box.getSize(new THREE.Vector3());
+
+  // Scale to fit nicely in mini view (max extent = 1.2 units)
+  const maxExtent = Math.max(size.x, size.y, size.z, 0.1);
+  const scale = 1.2 / maxExtent;
+  clonedGroup.scale.setScalar(scale);
+
+  // Re-center: move so bounding box center is at world origin (0,0,0)
+  const center = box.getCenter(new THREE.Vector3());
+  clonedGroup.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+
+  // Store original materials and apply bright highlight
+  clonedGroup.traverse(child => {
+    if (child.isMesh) {
+      child.userData._origMat = child.material;
+      // Create bright material for mini preview
+      const mat = child.material.clone();
+      mat.emissive = new THREE.Color(0x1a2a4a);
+      mat.emissiveIntensity = 0.3;
+      child.material = mat;
+    }
+  });
+
+  miniScene.add(clonedGroup);
+  miniState.partMesh = clonedGroup;
+  miniState.angle = 0;
+  miniState.active = true;
+
+  // Adjust mini camera based on part size
+  const dist = 2.5 / Math.max(scale, 0.5);
+  miniCamera.position.set(0, dist * 0.3, dist);
+  miniCamera.lookAt(0, 0, 0);
+}
+
+function hideMiniPreview() {
+  document.getElementById('miniLoadingState').style.display = 'flex';
+  document.getElementById('miniPartName').textContent = '—';
+  document.getElementById('miniSpinIcon').style.display = 'none';
+  if (miniState.partMesh) {
+    miniScene.remove(miniState.partMesh);
+    miniState.partMesh = null;
+  }
+  miniState.active = false;
+}
+
+window.onMiniSpeedChange = function(val) {
+  miniState.speed = parseFloat(val);
+  document.getElementById('miniSpeedLabel').textContent = parseFloat(val).toFixed(1) + '×';
+};
+
+// Resize observer
+const vp = document.getElementById('viewport');
+const ro = new ResizeObserver(() => {
+  const w = vp.clientWidth, h = vp.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+});
+ro.observe(vp);
+
+// ---- 360° Auto-Rotate State ----
+const rotateState = {
+  active: false,
+  paused: false,
+  axis: 'Y',          // 'X' | 'Y' | 'Z'
+  speed: 1.0,         // multiplier
+  angle: 0,           // accumulated angle (radians)
+  pivotTarget: null,  // THREE.Vector3 center of selected part
+  orbitRadius: 0,     // camera orbit radius
+  orbitPolar: 0,      // polar angle (from Y axis), kept constant during spin
+};
+
+// Render loop
+let previewTimer = null;
+function animate() {
+  requestAnimationFrame(animate);
+
+  // 360° orbit rotate: move camera around the selected part
+  if (rotateState.active && !rotateState.paused && rotateState.pivotTarget) {
+    const dt = 0.016; // ~60fps assumed
+    const speed = rotateState.speed * 0.012; // radians per frame
+    rotateState.angle += speed;
+
+    const pivot = rotateState.pivotTarget;
+    const r = rotateState.orbitRadius;
+    const polar = rotateState.orbitPolar;
+
+    if (rotateState.axis === 'Y') {
+      camera.position.x = pivot.x + r * Math.sin(rotateState.angle) * Math.sin(polar);
+      camera.position.y = pivot.y + r * Math.cos(polar);
+      camera.position.z = pivot.z + r * Math.cos(rotateState.angle) * Math.sin(polar);
+    } else if (rotateState.axis === 'X') {
+      camera.position.x = pivot.x + r * Math.cos(polar);
+      camera.position.y = pivot.y + r * Math.sin(rotateState.angle) * Math.sin(polar);
+      camera.position.z = pivot.z + r * Math.cos(rotateState.angle) * Math.sin(polar);
+    } else { // Z
+      camera.position.x = pivot.x + r * Math.sin(rotateState.angle) * Math.sin(polar);
+      camera.position.y = pivot.y + r * Math.cos(rotateState.angle) * Math.sin(polar);
+      camera.position.z = pivot.z + r * Math.cos(polar);
+    }
+    camera.lookAt(pivot);
+    controls.target.copy(pivot);
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// Click to select
+canvas.addEventListener('pointerup', (e) => {
+  if (e.button !== 0) return;
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const meshes = state.parts.filter(p => p.mesh).map(p => p.mesh).flatMap(m => {
+    const arr = [];
+    m.traverse(c => { if (c.isMesh) arr.push(c); });
+    return arr;
+  });
+  const hits = raycaster.intersectObjects(meshes, true);
+  if (hits.length > 0) {
+    const hit = hits[0].object;
+    const part = state.parts.find(p => {
+      let found = false;
+      if (p.mesh) p.mesh.traverse(c => { if (c === hit) found = true; });
+      return found;
+    });
+    if (part) { window.selectPart(part.id); }
+  }
+});
+
+// Reset camera
+window.resetCamera = function() {
+  controls.reset();
+  camera.position.set(3, 2.5, 4);
+  controls.update();
+};
+
+// Wireframe toggle
+window.toggleWireframe = function() {
+  state.wireframe = !state.wireframe;
+  state.parts.forEach(p => {
+    if (p.mesh) p.mesh.traverse(c => { if (c.isMesh && c.userData._origMat) c.material.wireframe = state.wireframe; });
+  });
+  document.getElementById('btnWireframe').style.color = state.wireframe ? 'var(--accent)' : '';
+};
+
+// Grid toggle
+window.toggleGrid = function() {
+  state.gridVisible = !state.gridVisible;
+  gridHelper.visible = state.gridVisible;
+  document.getElementById('btnGrid').style.color = state.gridVisible ? 'var(--accent)' : '';
+};
+
+// Focus selected
+window.focusSelected = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part || !part.mesh) return;
+  const box = new THREE.Box3().setFromObject(part.mesh);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3()).length();
+  controls.target.copy(center);
+  camera.position.copy(center).addScaledVector(new THREE.Vector3(1,0.8,1).normalize(), size * 1.8);
+  controls.update();
+};
+
+// ---- 360° Auto-Rotate Controls ----
+window.toggleAutoRotate = function() {
+  if (rotateState.active) {
+    stopAutoRotate();
+  } else {
+    startAutoRotate();
+  }
+};
+
+function startAutoRotate() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) {
+    showToast('请先选择一个零件');
+    return;
+  }
+
+  // Compute bounding box center & orbit radius
+  let center = new THREE.Vector3(part.position.x, part.position.y, part.position.z);
+  let size = 1.2;
+  if (part.mesh) {
+    const box = new THREE.Box3().setFromObject(part.mesh);
+    center = box.getCenter(new THREE.Vector3());
+    size = box.getSize(new THREE.Vector3()).length();
+  }
+  rotateState.pivotTarget = center.clone();
+  rotateState.orbitRadius = size * 2.2;
+
+  // Compute current polar angle from current camera position
+  const offset = camera.position.clone().sub(center);
+  rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.y / offset.length())));
+  // Start angle from current azimuth
+  rotateState.angle = Math.atan2(offset.x, offset.z);
+
+  rotateState.active = true;
+  rotateState.paused = false;
+
+  // Disable OrbitControls while rotating
+  controls.enabled = false;
+
+  // Show panel
+  const panel = document.getElementById('rotatePanel');
+  panel.style.display = 'block';
+  panel.style.animation = 'fadeIn 0.2s ease';
+  document.getElementById('rotatePanelPartName').textContent = part.name;
+  document.getElementById('rotateSpeedSlider').value = rotateState.speed;
+  document.getElementById('rotateSpeedLabel').textContent = rotateState.speed.toFixed(1) + '×';
+  document.getElementById('btnPauseRotate').textContent = '⏸ 暂停';
+  document.getElementById('btnAutoRotate').style.color = 'var(--accent)';
+
+  // Update viewport mode tag
+  document.getElementById('viewportModeTag').textContent = '360° 旋转预览';
+  document.getElementById('viewportModeTag').style.color = 'var(--success)';
+  document.getElementById('viewportModeTag').style.borderColor = 'rgba(46,201,124,0.35)';
+  document.getElementById('viewportModeTag').style.background = 'rgba(46,201,124,0.12)';
+  document.getElementById('viewportHint').textContent = '360° 旋转中 · 点击工具栏按钮停止';
+}
+
+function stopAutoRotate() {
+  rotateState.active = false;
+  rotateState.paused = false;
+  rotateState.pivotTarget = null;
+  controls.enabled = true;
+
+  document.getElementById('rotatePanel').style.display = 'none';
+  document.getElementById('btnAutoRotate').style.color = '';
+  document.getElementById('viewportModeTag').textContent = '查看模式';
+  document.getElementById('viewportModeTag').style.color = 'var(--accent)';
+  document.getElementById('viewportModeTag').style.borderColor = 'rgba(79,142,247,0.3)';
+  document.getElementById('viewportModeTag').style.background = 'rgba(79,142,247,0.15)';
+  document.getElementById('viewportHint').textContent = '左键旋转 · 右键平移 · 滚轮缩放 · 点击选择零件';
+}
+
+window.pauseResumeRotate = function() {
+  if (!rotateState.active) return;
+  rotateState.paused = !rotateState.paused;
+  const btn = document.getElementById('btnPauseRotate');
+  if (rotateState.paused) {
+    btn.textContent = '▶ 继续';
+    controls.enabled = true; // Allow manual control while paused
+  } else {
+    btn.textContent = '⏸ 暂停';
+    controls.enabled = false;
+    // Re-sync orbit from current camera position so resume is seamless
+    if (rotateState.pivotTarget) {
+      const offset = camera.position.clone().sub(rotateState.pivotTarget);
+      rotateState.orbitRadius = offset.length();
+      rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.y / offset.length())));
+      rotateState.angle = Math.atan2(offset.x, offset.z);
+    }
+  }
+};
+
+window.resetRotate = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  let center = new THREE.Vector3(part.position.x, part.position.y, part.position.z);
+  let size = 1.2;
+  if (part.mesh) {
+    const box = new THREE.Box3().setFromObject(part.mesh);
+    center = box.getCenter(new THREE.Vector3());
+    size = box.getSize(new THREE.Vector3()).length();
+  }
+  rotateState.pivotTarget = center.clone();
+  rotateState.orbitRadius = size * 2.2;
+  rotateState.angle = 0;
+  rotateState.orbitPolar = Math.PI / 3.5; // nice ~51° tilt
+};
+
+window.onRotateSpeedChange = function(val) {
+  rotateState.speed = parseFloat(val);
+  document.getElementById('rotateSpeedLabel').textContent = parseFloat(val).toFixed(1) + '×';
+};
+
+window.setRotateAxis = function(btn) {
+  document.querySelectorAll('.rot-axis-btn').forEach(b => {
+    b.style.borderColor = 'var(--border2)';
+    b.style.background = 'transparent';
+    b.style.color = 'var(--text2)';
+  });
+  btn.style.borderColor = 'var(--accent)';
+  btn.style.background = 'rgba(79,142,247,0.15)';
+  btn.style.color = 'var(--accent)';
+  rotateState.axis = btn.dataset.axis;
+  // Re-sync angle for new axis
+  if (rotateState.pivotTarget) {
+    const offset = camera.position.clone().sub(rotateState.pivotTarget);
+    rotateState.orbitRadius = offset.length();
+    if (rotateState.axis === 'Y') {
+      rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.y / offset.length())));
+      rotateState.angle = Math.atan2(offset.x, offset.z);
+    } else if (rotateState.axis === 'X') {
+      rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.x / offset.length())));
+      rotateState.angle = Math.atan2(offset.y, offset.z);
+    } else {
+      rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.z / offset.length())));
+      rotateState.angle = Math.atan2(offset.x, offset.y);
+    }
+  }
+};
+
+// ---- Demo model builder ----
+window.loadDemoModel = function() {
+  showLoading('生成演示模型...');
+  setTimeout(() => setLoadingProgress(20, '创建零件...'), 200);
+  setTimeout(() => {
+    buildDemoModel();
+  }, 800);
+};
+
+function buildDemoModel() {
+  setLoadingProgress(60, '解析零件结构...');
+
+  // Clear
+  while (modelRoot.children.length) modelRoot.remove(modelRoot.children[0]);
+  state.parts = [];
+
+  const demoPartDefs = [
+    { name: '底座框架', color: 0x5588dd, size: [2,0.2,2], pos: [0,0,0], mat: '铝合金 6061' },
+    { name: '左侧支柱', color: 0x558855, size: [0.12,1.5,0.12], pos: [-0.9,0.85,0], mat: '钢材 Q235' },
+    { name: '右侧支柱', color: 0x558855, size: [0.12,1.5,0.12], pos: [0.9,0.85,0], mat: '钢材 Q235' },
+    { name: '前侧支柱', color: 0x558855, size: [0.12,1.5,0.12], pos: [0,0.85,0.9], mat: '钢材 Q235' },
+    { name: '后侧支柱', color: 0x558855, size: [0.12,1.5,0.12], pos: [0,0.85,-0.9], mat: '钢材 Q235' },
+    { name: '顶盖板', color: 0x8855aa, size: [2,0.15,2], pos: [0,1.65,0], mat: '碳纤维' },
+    { name: '中央轴承', color: 0xccaa44, size: [0.4,0.4,0.4], pos: [0,0.85,0], mat: '轴承钢', shape: 'sphere' },
+    { name: '左前横梁', color: 0x4499cc, size: [0.95,0.1,0.1], pos: [-0.45,0.55,0.9], mat: '铝合金' },
+    { name: '右前横梁', color: 0x4499cc, size: [0.95,0.1,0.1], pos: [0.45,0.55,0.9], mat: '铝合金' },
+    { name: '驱动电机', color: 0xdd5533, size: [0.3,0.5,0.3], pos: [0,0.4,0], mat: '铸铁', shape: 'cylinder' },
+    { name: '散热片A', color: 0xaaaaaa, size: [0.6,0.05,0.3], pos: [-0.7,1.3,0], mat: '铝' },
+    { name: '散热片B', color: 0xaaaaaa, size: [0.6,0.05,0.3], pos: [0.7,1.3,0], mat: '铝' },
+  ];
+
+  const installDirs = ['+Y','+Y','+X','-X','+Z','-Z','+Y','+Z','+Z','+Y','-X','+X'];
+  const stepOrder   = [1,   3,   4,   5,   6,   2,   7,   8,   9,   10,  11,  12];
+  const notes = [
+    '先安装底座，确保水平', '安装顶盖前检查支柱垂直度', '左侧支柱需与底座卡槽对齐',
+    '右侧支柱对称安装', '前侧支柱注意防转扭矩', '后侧支柱同前', '轴承需先涂抹润滑脂',
+    '横梁需用力矩扳手紧固至 15N·m', '横梁安装同左', '电机安装前检查出线方向',
+    '散热片安装前涂导热硅脂', '散热片安装同A'
+  ];
+
+  demoPartDefs.forEach((def, i) => {
+    let geo;
+    if (def.shape === 'sphere') geo = new THREE.SphereGeometry(def.size[0]/2, 16, 16);
+    else if (def.shape === 'cylinder') geo = new THREE.CylinderGeometry(def.size[0]/2, def.size[0]/2, def.size[1], 16);
+    else geo = new THREE.BoxGeometry(...def.size);
+
+    const mat = new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.5, metalness: 0.5 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(...def.pos);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.traverse(c => { if (c.isMesh) c.userData._origMat = c.material; });
+
+    const group = new THREE.Group();
+    group.add(mesh);
+    modelRoot.add(group);
+
+    state.parts.push({
+      id: 'part_' + i,
+      name: def.name,
+      material: def.mat,
+      color: '#' + def.color.toString(16).padStart(6,'0'),
+      position: { x: def.pos[0], y: def.pos[1], z: def.pos[2] },
+      rotation: { x: 0, y: 0, z: 0 },
+      installDir: installDirs[i],
+      stepOrder: stepOrder[i],
+      note: notes[i],
+      mesh: group,
+      configured: true,
+    });
+  });
+
+  setTimeout(() => {
+    setLoadingProgress(100, '完成！');
+    setTimeout(() => {
+      hideLoading();
+      document.getElementById('fileName').textContent = 'demo_assembly_model.glb';
+      document.getElementById('btnExport').disabled = false;
+      showViewport();
+      renderPartList();
+      renderSteps();
+      document.getElementById('previewBar').style.display = '';
+    }, 400);
+  }, 600);
+}
+
+// ---- File upload handler (GLB/GLTF) ----
+window.handleFileUpload = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  document.getElementById('fileName').textContent = file.name;
+
+  showLoading('正在解析文件...');
+
+  if (ext === 'glb' || ext === 'gltf') {
+    const url = URL.createObjectURL(file);
+    const loader = new GLTFLoader();
+    setLoadingProgress(10, '加载模型文件...');
+    loader.load(url, (gltf) => {
+      setLoadingProgress(70, '解析零件树...');
+      processGLTFModel(gltf.scene, file.name);
+    }, (xhr) => {
+      const pct = Math.round((xhr.loaded / xhr.total) * 60) + 10;
+      setLoadingProgress(pct, '传输中...');
+    }, (err) => {
+      console.error(err);
+      hideLoading();
+      alert('模型加载失败：' + err.message);
+    });
+  } else if (ext === 'obj') {
+    const url = URL.createObjectURL(file);
+    const loader = new OBJLoader();
+    setLoadingProgress(10, '加载OBJ文件...');
+    loader.load(url, (obj) => {
+      setLoadingProgress(70, '解析零件...');
+      processOBJModel(obj, file.name);
+    });
+  } else {
+    setTimeout(() => {
+      hideLoading();
+      alert(`暂不支持 .${ext} 格式的直接解析，建议先转换为 GLB/GLTF 格式，或使用演示模型。`);
+    }, 500);
+  }
+};
+
+function processGLTFModel(scene3d, filename) {
+  while (modelRoot.children.length) modelRoot.remove(modelRoot.children[0]);
+  state.parts = [];
+
+  let partIndex = 0;
+  const colors = [0x4488dd, 0x44aa55, 0xdd8833, 0xaa44cc, 0x44aacc, 0xdd4444, 0x88aa44];
+
+  scene3d.traverse((node) => {
+    if (node.isMesh) {
+      const group = new THREE.Group();
+      group.position.copy(node.position);
+      group.rotation.copy(node.rotation);
+      const clone = node.clone();
+      clone.position.set(0,0,0);
+      clone.rotation.set(0,0,0);
+      if (!clone.material || Array.isArray(clone.material)) {
+        const c = colors[partIndex % colors.length];
+        clone.material = new THREE.MeshStandardMaterial({ color: c, roughness: 0.5, metalness: 0.3 });
+      }
+      clone.traverse(c => { if (c.isMesh) c.userData._origMat = c.material; });
+      group.add(clone);
+      modelRoot.add(group);
+
+      state.parts.push({
+        id: 'part_' + partIndex,
+        name: node.name || ('零件 #' + (partIndex+1)),
+        material: '未知',
+        color: '#' + colors[partIndex % colors.length].toString(16).padStart(6,'0'),
+        position: { x: Math.round(node.position.x*100)/100, y: Math.round(node.position.y*100)/100, z: Math.round(node.position.z*100)/100 },
+        rotation: { x: Math.round(THREE.MathUtils.radToDeg(node.rotation.x)), y: Math.round(THREE.MathUtils.radToDeg(node.rotation.y)), z: Math.round(THREE.MathUtils.radToDeg(node.rotation.z)) },
+        installDir: null,
+        stepOrder: partIndex + 1,
+        note: '',
+        mesh: group,
+        configured: false,
+      });
+      partIndex++;
+    }
+  });
+
+  finishLoad(filename);
+}
+
+function processOBJModel(obj, filename) {
+  while (modelRoot.children.length) modelRoot.remove(modelRoot.children[0]);
+  state.parts = [];
+  const colors = [0x4488dd, 0x44aa55, 0xdd8833, 0xaa44cc, 0x44aacc];
+
+  let i = 0;
+  obj.children.forEach(child => {
+    if (child.isMesh) {
+      const mat = new THREE.MeshStandardMaterial({ color: colors[i % colors.length], roughness: 0.5, metalness: 0.3 });
+      child.material = mat;
+      child.traverse(c => { if (c.isMesh) c.userData._origMat = c.material; });
+      modelRoot.add(child.clone());
+      state.parts.push({
+        id: 'part_' + i,
+        name: child.name || ('零件 #' + (i+1)),
+        material: '未知',
+        color: '#' + colors[i % colors.length].toString(16).padStart(6,'0'),
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        installDir: null,
+        stepOrder: i+1,
+        note: '',
+        mesh: modelRoot.children[modelRoot.children.length-1],
+        configured: false,
+      });
+      i++;
+    }
+  });
+
+  finishLoad(filename);
+}
+
+function finishLoad(filename) {
+  // Auto-fit camera
+  const box = new THREE.Box3().setFromObject(modelRoot);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3()).length();
+  controls.target.copy(center);
+  camera.position.copy(center).addScaledVector(new THREE.Vector3(1,0.8,1).normalize(), size * 1.5);
+  controls.update();
+
+  setLoadingProgress(100, '完成！');
+  setTimeout(() => {
+    hideLoading();
+    document.getElementById('fileName').textContent = filename;
+    document.getElementById('btnExport').disabled = false;
+    showViewport();
+    renderPartList();
+    renderSteps();
+    document.getElementById('previewBar').style.display = '';
+    // 保存零件原始位置
+    saveOriginalPositions();
+  }, 300);
+}
+
+// ---- UI helpers ----
+function showLoading(msg) {
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  document.getElementById('loadingText').textContent = msg;
+  document.getElementById('loadingBar').style.width = '0%';
+}
+function setLoadingProgress(pct, msg) {
+  document.getElementById('loadingBar').style.width = pct + '%';
+  if (msg) document.getElementById('loadingText').textContent = msg;
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+function showViewport() {
+  document.getElementById('uploadOverlay').style.display = 'none';
+  document.getElementById('canvas3d').style.display = 'block';
+  document.getElementById('viewportToolbar').style.display = 'flex';
+  document.getElementById('viewportHint').style.display = 'block';
+  document.getElementById('viewportModeTag').style.display = 'block';
+  const w = vp.clientWidth, h = vp.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+// ---- Part list ----
+window.renderPartList = function() {
+  const listEl = document.getElementById('partList');
+  const count = state.parts.length;
+  document.getElementById('partCount').textContent = count;
+
+  if (count === 0) {
+    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div>暂无零件数据</div>';
+    return;
+  }
+
+  const colors = ['#4488dd','#44aa55','#dd8833','#aa44cc','#44aacc','#dd4444','#88aa44','#ccaa44','#dd5533','#aa8844'];
+  const bg = (hex) => hex + '22';
+  const searchVal = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = state.parts.filter(p => p.name.toLowerCase().includes(searchVal));
+
+  listEl.innerHTML = filtered.map((p, i) => {
+    const col = p.color || colors[i % colors.length];
+    const statusClass = !p.installDir ? 'status-pending' : (p.configured ? 'status-done' : 'status-warn');
+    return `<div class="part-item${state.selectedPartId === p.id ? ' active' : ''}" onclick="selectPart('${p.id}')" id="pitem_${p.id}">
+      <div class="part-icon" style="background:${bg(col)};color:${col}">${p.name.substring(0,2)}</div>
+      <div class="part-info">
+        <div class="part-name">${p.name}</div>
+        <div class="part-meta">步骤 ${p.stepOrder} · ${p.material || '未知材质'}</div>
+      </div>
+      <div class="part-status ${statusClass}" title="${!p.installDir ? '待配置' : '已配置'}"></div>
+    </div>`;
+  }).join('');
+};
+
+window.filterParts = function(val) { renderPartList(); };
+
+// ---- Select part ----
+window.selectPart = function(id) {
+  // Restore previous highlight
+  if (state.selectedPartId) {
+    const prev = state.parts.find(p => p.id === state.selectedPartId);
+    if (prev && prev.mesh) {
+      prev.mesh.traverse(c => {
+        if (c.isMesh && c.userData._origMat) c.material = c.userData._origMat;
+      });
+    }
+  }
+  state.selectedPartId = id;
+
+  // Highlight new
+  const part = state.parts.find(p => p.id === id);
+  if (!part) return;
+  if (part.mesh) {
+    part.mesh.traverse(c => {
+      if (c.isMesh) c.material = highlightMat;
+    });
+  }
+
+  // Show direction arrow
+  showDirectionArrow(part);
+
+  // Auto-update mini 360° preview
+  updateMiniPreview(part);
+
+  // If auto-rotate is active, re-target to newly selected part
+  if (rotateState.active) {
+    let center = new THREE.Vector3(part.position.x, part.position.y, part.position.z);
+    let size = 1.2;
+    if (part.mesh) {
+      const box = new THREE.Box3().setFromObject(part.mesh);
+      center = box.getCenter(new THREE.Vector3());
+      size = box.getSize(new THREE.Vector3()).length();
+    }
+    rotateState.pivotTarget = center.clone();
+    rotateState.orbitRadius = size * 2.2;
+    rotateState.angle = 0;
+    rotateState.orbitPolar = Math.PI / 3.5;
+    document.getElementById('rotatePanelPartName').textContent = part.name;
+  }
+
+  // Update UI
+  renderPartList();
+  showPropEditor(part);
+};
+
+function showPropEditor(part) {
+  document.getElementById('noSelectState').style.display = 'none';
+  const ed = document.getElementById('propEditor');
+  ed.style.display = 'block';
+
+  document.getElementById('propName').value = part.name;
+  document.getElementById('propOrder').textContent = state.parts.indexOf(part) + 1;
+  document.getElementById('posX').value = part.position.x;
+  document.getElementById('posY').value = part.position.y;
+  document.getElementById('posZ').value = part.position.z;
+  document.getElementById('rotX').value = part.rotation.x;
+  document.getElementById('rotY').value = part.rotation.y;
+  document.getElementById('rotZ').value = part.rotation.z;
+  document.getElementById('propStep').value = part.stepOrder;
+  document.getElementById('propNote').value = part.note || '';
+  document.getElementById('customDirInput').value = part.installDir || '';
+
+  // Dir btns
+  document.querySelectorAll('.dir-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.dir === part.installDir);
+  });
+}
+
+// ---- Direction selector ----
+window.selectDir = function(btn) {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  part.installDir = btn.dataset.dir;
+  document.getElementById('customDirInput').value = part.installDir;
+  showDirectionArrow(part);
+};
+
+// Apply custom direction input
+window.applyCustomDir = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  const val = document.getElementById('customDirInput').value.trim();
+  if (!val) return;
+  part.installDir = val;
+  // Update button selection
+  document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('selected'));
+  const matched = document.querySelector(`.dir-btn[data-dir="${val}"]`);
+  if (matched) matched.classList.add('selected');
+  showDirectionArrow(part);
+};
+
+// ---- Property updates ----
+window.updatePosition = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  part.position.x = parseFloat(document.getElementById('posX').value) || 0;
+  part.position.y = parseFloat(document.getElementById('posY').value) || 0;
+  part.position.z = parseFloat(document.getElementById('posZ').value) || 0;
+  if (part.mesh) {
+    part.mesh.position.set(part.position.x, part.position.y, part.position.z);
+    showDirectionArrow(part);
+  }
+};
+
+window.updateRotation = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  part.rotation.x = parseFloat(document.getElementById('rotX').value) || 0;
+  part.rotation.y = parseFloat(document.getElementById('rotY').value) || 0;
+  part.rotation.z = parseFloat(document.getElementById('rotZ').value) || 0;
+  if (part.mesh) {
+    part.mesh.rotation.set(
+      THREE.MathUtils.degToRad(part.rotation.x),
+      THREE.MathUtils.degToRad(part.rotation.y),
+      THREE.MathUtils.degToRad(part.rotation.z)
+    );
+  }
+};
+
+window.updateStep = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  part.stepOrder = parseInt(document.getElementById('propStep').value) || 1;
+  renderSteps();
+};
+
+window.updateNote = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  part.note = document.getElementById('propNote').value;
+  renderSteps();
+};
+
+// ---- Apply config ----
+window.applyPartConfig = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  part.name = document.getElementById('propName').value || part.name;
+  part.configured = !!part.installDir;
+  renderPartList();
+  renderSteps();
+  showToast('配置已保存');
+};
+
+// ---- Steps panel ----
+window.renderSteps = function() {
+  const sorted = [...state.parts].sort((a,b) => a.stepOrder - b.stepOrder);
+  const listEl = document.getElementById('stepsList');
+  if (sorted.length === 0) { listEl.innerHTML = '<div class="empty-state" style="padding:20px 0">暂无步骤</div>'; return; }
+
+  const dirLabels = {'+X':'从+X方向','-X':'从-X方向','+Y':'从上方','-Y':'从下方','+Z':'从前方','-Z':'从后方'};
+  listEl.innerHTML = sorted.map((p, i) => `
+    <div class="step-item${p.configured ? ' step-done' : ''}" onclick="previewStepOnly('${p.id}')" style="cursor:pointer" title="点击预览此步骤">
+      <div class="step-num">${p.stepOrder}</div>
+      <div class="step-body">
+        <div class="step-title">${p.name}</div>
+        <div class="step-desc">${p.note || '安装此零件'}</div>
+        ${p.installDir ? `<span class="step-dir-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M5 12h14M15 6l6 6-6 6"/></svg>
+          ${dirLabels[p.installDir] || p.installDir}
+        </span>` : '<span style="font-size:11px;color:var(--warn)">⚠ 未配置安装方向</span>'}
+      </div>
+    </div>
+  `).join('');
+};
+
+// Preview a single step only (up to this step) - 带飞入动画
+window.previewStepOnly = function(partId) {
+  const sorted = [...state.parts].sort((a,b) => a.stepOrder - b.stepOrder);
+  const targetPart = state.parts.find(p => p.id === partId);
+  if (!targetPart) return;
+
+  // 确保位置已保存
+  if (!state.isPreviewMode) {
+    saveOriginalPositions();
+    restoreOriginalPositions();
+    state.isPreviewMode = true;
+    setViewportMode('preview');
+  }
+
+  // Find which step number this is (1-indexed)
+  const stepIndex = sorted.findIndex(p => p.id === partId) + 1;
+
+  // 安装方向偏移
+  const dirOffsets = {
+    '+X': 3, '-X': -3,
+    '+Y': 3, '-Y': -3,
+    '+Z': 3, '-Z': -3
+  };
+
+  // 显示到目标步骤，带飞入动画
+  sorted.forEach((p, i) => {
+    if (p.mesh) {
+      if (i < stepIndex) {
+        const originalPos = p._originalPos || { x: p.mesh.position.x, y: p.mesh.position.y, z: p.mesh.position.z };
+        const dir = p.installDir || '+Y';
+        const offset = dirOffsets[dir] || 3;
+
+        let startPos = { x: originalPos.x, y: originalPos.y, z: originalPos.z };
+        if (dir === '+X') startPos.x = originalPos.x + offset;
+        else if (dir === '-X') startPos.x = originalPos.x - offset;
+        else if (dir === '+Y') startPos.y = originalPos.y + offset;
+        else if (dir === '-Y') startPos.y = originalPos.y - offset;
+        else if (dir === '+Z') startPos.z = originalPos.z + offset;
+        else if (dir === '-Z') startPos.z = originalPos.z - offset;
+
+        p.mesh.position.set(startPos.x, startPos.y, startPos.z);
+        p.mesh.visible = true;
+        animatePartFlyIn(p, startPos, originalPos, 400);
+      } else {
+        p.mesh.visible = false;
+      }
+    }
+  });
+
+  state.previewStep = stepIndex;
+
+  // Highlight the target part
+  highlightStepPart(partId);
+
+  // Update preview bar to reflect current step
+  updatePreviewUI(stepIndex, sorted.length);
+  updateStepButtons(stepIndex, sorted.length);
+
+  // Switch to props tab to show this part's info
+  switchTab('props');
+  showPropEditor(targetPart);
+
+  renderPartList();
+};
+
+window.autoSortSteps = function() {
+  state.parts.forEach((p, i) => p.stepOrder = i+1);
+  renderSteps();
+  showToast('步骤已自动重排');
+};
+
+// ---- Tab switching ----
+window.switchTab = function(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tabProps').classList.toggle('active', tab === 'props');
+  document.getElementById('tabSteps').classList.toggle('active', tab === 'steps');
+  document.getElementById('panelProps').style.display = tab === 'props' ? '' : 'none';
+  document.getElementById('panelSteps').style.display = tab === 'steps' ? '' : 'none';
+};
+
+// ---- Export config ----
+
+// ---- Export config ----
+window.exportConfig = function() {
+  const config = {
+    version: '1.0',
+    exportTime: new Date().toISOString(),
+    modelFile: document.getElementById('fileName').textContent,
+    parts: state.parts.map(p => ({
+      id: p.id,
+      name: p.name,
+      material: p.material,
+      color: p.color,
+      position: p.position,
+      rotation: p.rotation,
+      installDirection: p.installDir,
+      assemblyStep: p.stepOrder,
+      note: p.note,
+      configured: p.configured,
+    }))
+  };
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'assembly_config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('配置已导出为 assembly_config.json');
+};
+
+// ---- 手动步骤预览 ----
+
+// 保存所有零件的原始位置
+function saveOriginalPositions() {
+  state.parts.forEach(p => {
+    if (p.mesh) {
+      p._originalPos = {
+        x: p.mesh.position.x,
+        y: p.mesh.position.y,
+        z: p.mesh.position.z
+      };
+    }
+  });
+}
+
+// 恢复到原始位置
+function restoreOriginalPositions() {
+  state.parts.forEach(p => {
+    if (p.mesh && p._originalPos) {
+      p.mesh.position.set(p._originalPos.x, p._originalPos.y, p._originalPos.z);
+    }
+  });
+}
+
+// 重置预览状态（从第一步开始）
+window.resetPreview = function() {
+  if (state.parts.length === 0) return;
+
+  // 确保先恢复到原始位置
+  restoreOriginalPositions();
+
+  state.isPreviewMode = true;
+  state.previewStep = 0;
+  const sorted = [...state.parts].sort((a, b) => a.stepOrder - b.stepOrder);
+  state.previewMaxStep = sorted.length;
+
+  // 隐藏所有零件
+  sorted.forEach(p => { if (p.mesh) p.mesh.visible = false; });
+
+  // 更新UI
+  updatePreviewUI(0, sorted.length);
+  updateStepButtons(0, sorted.length);
+  setViewportMode('preview');
+
+  showToast('从第一步开始预览');
+};
+
+// 退出预览模式
+window.exitPreview = function() {
+  if (state.parts.length === 0) return;
+
+  // 恢复所有零件到原始位置并显示
+  restoreOriginalPositions();
+  state.parts.forEach(p => { if (p.mesh) p.mesh.visible = true; });
+
+  state.isPreviewMode = false;
+  state.previewStep = 0;
+
+  // 取消选中状态
+  if (state.selectedPartId) {
+    const part = state.parts.find(p => p.id === state.selectedPartId);
+    if (part && part.mesh) {
+      part.mesh.traverse(c => {
+        if (c.isMesh && c.userData._origMat) c.material = c.userData._origMat;
+      });
+    }
+  }
+  state.selectedPartId = null;
+
+  // 更新UI
+  const sorted = [...state.parts].sort((a, b) => a.stepOrder - b.stepOrder);
+  updatePreviewUI(0, sorted.length);
+  updateStepButtons(0, sorted.length);
+  setViewportMode('view');
+  renderPartList();
+  switchTab('props');
+  document.getElementById('noSelectState').style.display = '';
+  document.getElementById('propEditor').style.display = 'none';
+
+  showToast('已退出预览，显示完整模型');
+};
+
+// 下一步 - 带飞入动画
+window.nextStep = function() {
+  if (state.parts.length === 0) return;
+
+  // 如果不是预览模式，先初始化
+  if (!state.isPreviewMode) {
+    saveOriginalPositions();
+    restoreOriginalPositions();
+    state.isPreviewMode = true;
+    state.previewStep = 0;
+    const sorted = [...state.parts].sort((a, b) => a.stepOrder - b.stepOrder);
+    state.previewMaxStep = sorted.length;
+    sorted.forEach(p => { if (p.mesh) p.mesh.visible = false; });
+    setViewportMode('preview');
+  }
+
+  const sorted = [...state.parts].sort((a, b) => a.stepOrder - b.stepOrder);
+
+  if (state.previewStep < sorted.length) {
+    const currentPart = sorted[state.previewStep];
+    if (currentPart && currentPart.mesh) {
+      const originalPos = currentPart._originalPos;
+      if (!originalPos) {
+        // 如果没有保存原始位置，使用当前mesh的位置
+        currentPart._originalPos = {
+          x: currentPart.mesh.position.x,
+          y: currentPart.mesh.position.y,
+          z: currentPart.mesh.position.z
+        };
+      }
+
+      // 根据安装方向计算飞入起点位置
+      const dir = currentPart.installDir || '+Y';
+      const dirOffsets = {
+        '+X': 3, '-X': -3,
+        '+Y': 3, '-Y': -3,
+        '+Z': 3, '-Z': -3
+      };
+      const offset = dirOffsets[dir] || 3;
+
+      let startPos = { x: 0, y: 0, z: 0 };
+      if (dir === '+X') startPos.x = originalPos.x + offset;
+      else if (dir === '-X') startPos.x = originalPos.x - offset;
+      else if (dir === '+Y') startPos.y = originalPos.y + offset;
+      else if (dir === '-Y') startPos.y = originalPos.y - offset;
+      else if (dir === '+Z') startPos.z = originalPos.z + offset;
+      else if (dir === '-Z') startPos.z = originalPos.z - offset;
+
+      // 设置为起点位置
+      currentPart.mesh.position.set(startPos.x, startPos.y, startPos.z);
+      currentPart.mesh.visible = true;
+
+      // 飞入动画
+      animatePartFlyIn(currentPart, startPos, originalPos);
+
+      state.previewStep++;
+      updatePreviewUI(state.previewStep, sorted.length);
+      updateStepButtons(state.previewStep, sorted.length);
+
+      // 高亮当前步骤的零件
+      highlightStepPart(currentPart ? currentPart.id : null);
+    }
+  }
+};
+
+// 零件飞入动画
+function animatePartFlyIn(part, startPos, endPos, duration = 600) {
+  const startTime = performance.now();
+
+  function animate(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    // 缓动函数：easeOutCubic
+    const ease = 1 - Math.pow(1 - progress, 3);
+
+    // 插值位置
+    const x = startPos.x + (endPos.x - startPos.x) * ease;
+    const y = startPos.y + (endPos.y - startPos.y) * ease;
+    const z = startPos.z + (endPos.z - startPos.z) * ease;
+
+    if (part.mesh) {
+      part.mesh.position.set(x, y, z);
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // 动画完成，确保在最终位置
+      if (part.mesh) {
+        part.mesh.position.set(endPos.x, endPos.y, endPos.z);
+      }
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+// 上一步
+window.prevStep = function() {
+  if (!state.isPreviewMode || state.previewStep <= 0) return;
+
+  const sorted = [...state.parts].sort((a, b) => a.stepOrder - b.stepOrder);
+
+  // 隐藏上一步的零件
+  state.previewStep--;
+  if (state.previewStep < sorted.length) {
+    const partToHide = sorted[state.previewStep];
+    if (partToHide && partToHide.mesh) {
+      partToHide.mesh.visible = false;
+    }
+  }
+
+  updatePreviewUI(state.previewStep, sorted.length);
+  updateStepButtons(state.previewStep, sorted.length);
+
+  // 高亮当前步骤的零件
+  if (state.previewStep > 0) {
+    highlightStepPart(sorted[state.previewStep - 1].id);
+  } else {
+    highlightStepPart(null);
+  }
+};
+
+// 高亮步骤中的零件
+function highlightStepPart(partId) {
+  // 取消之前的高亮
+  if (state.selectedPartId) {
+    const prev = state.parts.find(p => p.id === state.selectedPartId);
+    if (prev && prev.mesh) {
+      prev.mesh.traverse(c => {
+        if (c.isMesh && c.userData._origMat) c.material = c.userData._origMat;
+      });
+    }
+  }
+
+  state.selectedPartId = partId;
+
+  if (partId) {
+    const part = state.parts.find(p => p.id === partId);
+    if (part && part.mesh) {
+      part.mesh.traverse(c => {
+        if (c.isMesh) c.material = highlightMat;
+      });
+    }
+  }
+}
+
+// 更新步骤按钮状态
+function updateStepButtons(step, total) {
+  document.getElementById('btnPrevStep').disabled = step <= 0;
+  document.getElementById('btnNextStep').disabled = step >= total;
+}
+
+// 更新预览UI
+function updatePreviewUI(step, total) {
+  const pct = total > 0 ? (step / total) * 100 : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressThumb').style.left = pct + '%';
+  document.getElementById('previewStepLabel').textContent = `步骤 ${step}/${total}`;
+}
+
+// 设置视口模式
+function setViewportMode(mode) {
+  const tag = document.getElementById('viewportModeTag');
+  if (mode === 'preview') {
+    tag.textContent = '搭建预览';
+    tag.style.color = 'var(--success)';
+    tag.style.borderColor = 'rgba(46,201,124,0.3)';
+    tag.style.background = 'rgba(46,201,124,0.1)';
+  } else {
+    tag.textContent = '查看模式';
+    tag.style.color = 'var(--accent)';
+    tag.style.borderColor = 'rgba(79,142,247,0.3)';
+    tag.style.background = 'rgba(79,142,247,0.15)';
+  }
+}
+
+// 跳转到指定步骤 - 带飞入动画
+window.seekPreview = function(e) {
+  const track = document.getElementById('progressTrack');
+  const rect = track.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const sorted = [...state.parts].sort((a, b) => a.stepOrder - b.stepOrder);
+  const targetStep = Math.round(pct * sorted.length);
+
+  // 确保位置已保存
+  if (!state.isPreviewMode) {
+    saveOriginalPositions();
+    restoreOriginalPositions();
+    state.isPreviewMode = true;
+    setViewportMode('preview');
+  }
+
+  // 显示到目标步骤，带飞入动画
+  const dirOffsets = {
+    '+X': 3, '-X': -3,
+    '+Y': 3, '-Y': -3,
+    '+Z': 3, '-Z': -3
+  };
+
+  sorted.forEach((p, i) => {
+    if (p.mesh) {
+      if (i < targetStep) {
+        // 需要显示的零件：先放到起点位置，再动画到终点位置
+        const originalPos = p._originalPos || { x: p.mesh.position.x, y: p.mesh.position.y, z: p.mesh.position.z };
+        const dir = p.installDir || '+Y';
+        const offset = dirOffsets[dir] || 3;
+
+        let startPos = { x: originalPos.x, y: originalPos.y, z: originalPos.z };
+        if (dir === '+X') startPos.x = originalPos.x + offset;
+        else if (dir === '-X') startPos.x = originalPos.x - offset;
+        else if (dir === '+Y') startPos.y = originalPos.y + offset;
+        else if (dir === '-Y') startPos.y = originalPos.y - offset;
+        else if (dir === '+Z') startPos.z = originalPos.z + offset;
+        else if (dir === '-Z') startPos.z = originalPos.z - offset;
+
+        // 设置为起点
+        p.mesh.position.set(startPos.x, startPos.y, startPos.z);
+        p.mesh.visible = true;
+
+        // 飞入动画
+        animatePartFlyIn(p, startPos, originalPos, 400);
+      } else {
+        p.mesh.visible = false;
+      }
+    }
+  });
+
+  state.previewStep = targetStep;
+  updatePreviewUI(targetStep, sorted.length);
+  updateStepButtons(targetStep, sorted.length);
+
+  // 高亮当前步骤
+  if (targetStep > 0) {
+    highlightStepPart(sorted[targetStep - 1].id);
+  } else {
+    highlightStepPart(null);
+  }
+};
+
+// 初始加载完成后保存原始位置
+function onModelLoaded() {
+  saveOriginalPositions();
+}
+
+// ---- Reset ----
+window.resetAll = function() {
+  // 先恢复所有位置
+  restoreOriginalPositions();
+  state.parts = [];
+  state.selectedPartId = null;
+  state.isPreviewMode = false;
+  state.previewStep = 0;
+  while (modelRoot.children.length) modelRoot.remove(modelRoot.children[0]);
+  document.getElementById('uploadOverlay').style.display = 'flex';
+  document.getElementById('canvas3d').style.display = 'none';
+  document.getElementById('viewportToolbar').style.display = 'none';
+  document.getElementById('viewportHint').style.display = 'none';
+  document.getElementById('viewportModeTag').style.display = 'none';
+  document.getElementById('previewBar').style.display = 'none';
+  document.getElementById('fileName').textContent = '';
+  document.getElementById('btnExport').disabled = true;
+  document.getElementById('noSelectState').style.display = '';
+  document.getElementById('propEditor').style.display = 'none';
+  if (directionArrow) { scene.remove(directionArrow); directionArrow = null; }
+  // Clear mini preview
+  hideMiniPreview();
+  renderPartList();
+  renderSteps();
+};
+
+// ---- File triggers ----
+window.triggerUpload = function() { document.getElementById('fileInput').click(); };
+window.handleDragOver = function(e) { e.preventDefault(); document.getElementById('uploadOverlay').classList.add('drag-over'); };
+window.handleDragLeave = function() { document.getElementById('uploadOverlay').classList.remove('drag-over'); };
+window.handleDrop = function(e) {
+  e.preventDefault();
+  document.getElementById('uploadOverlay').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('fileInput').files = dt.files;
+    handleFileUpload({ target: { files: [file] } });
+  }
+};
+
+// ---- Toast ----
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+    background: 'var(--bg3)', color: 'var(--text)', padding: '8px 18px',
+    borderRadius: '20px', fontSize: '13px', zIndex: 9999,
+    border: '1px solid var(--border2)', opacity: '1', transition: 'opacity 0.4s',
+  });
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 2000);
+}
+
+// ---- 返回资源列表 ----
+let currentResourceId = null;
+
+window.backToResourceList = function() {
+  // 保存当前配置
+  if (currentResourceId) {
+    saveResourceConfig();
+  }
+  // 跳转回资源列表
+  window.location.href = 'resource-list.html';
+};
+
+function saveResourceConfig() {
+  if (!currentResourceId) return;
+
+  // 获取资源列表数据
+  let resources = JSON.parse(localStorage.getItem('resource_list_data') || '[]');
+  const resourceIndex = resources.findIndex(r => r.id === currentResourceId);
+
+  if (resourceIndex !== -1) {
+    // 更新资源配置
+    resources[resourceIndex].configured = state.parts.length > 0 && state.parts.every(p => p.installDir);
+    resources[resourceIndex].partsConfig = state.parts.map(p => ({
+      id: p.id,
+      name: p.name,
+      material: p.material,
+      color: p.color,
+      position: p.position,
+      rotation: p.rotation,
+      installDir: p.installDir,
+      stepOrder: p.stepOrder,
+      note: p.note,
+    }));
+    localStorage.setItem('resource_list_data', JSON.stringify(resources));
+  }
+}
+
+// 从URL参数获取资源ID并加载配置
+function loadResourceConfig() {
+  const params = new URLSearchParams(window.location.search);
+  const resourceId = params.get('resourceId');
+
+  if (!resourceId) return null;
+
+  currentResourceId = resourceId;
+
+  // 显示返回按钮和资源名称标签
+  document.getElementById('btnBackToList').style.display = 'flex';
+
+  // 获取资源列表数据
+  const resources = JSON.parse(localStorage.getItem('resource_list_data') || '[]');
+  const resource = resources.find(r => r.id === resourceId);
+
+  if (resource) {
+    // 显示资源名称
+    document.getElementById('resourceNameTag').style.display = '';
+    document.getElementById('resourceNameTag').textContent = resource.name;
+    document.getElementById('fileName').textContent = resource.modelFile || '';
+
+    // 如果有保存的零件配置，加载它
+    if (resource.partsConfig && resource.partsConfig.length > 0) {
+      // 重新加载演示模型
+      setTimeout(() => {
+        loadDemoModelWithConfig(resource.partsConfig);
+      }, 100);
+    }
+  }
+
+  return resource;
+}
+
+// 加载带配置的演示模型
+function loadDemoModelWithConfig(partsConfig) {
+  showLoading('加载资源配置...');
+
+  // 清空现有模型
+  while (modelRoot.children.length) modelRoot.remove(modelRoot.children[0]);
+  state.parts = [];
+
+  // 使用配置中的颜色
+  const colors = [0x4488dd, 0x44aa55, 0xdd8833, 0xaa44cc, 0x44aacc, 0xdd4444, 0x88aa44, 0xccaa44, 0xdd5533, 0xaa8844];
+
+  partsConfig.forEach((cfg, i) => {
+    const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+    const color = cfg.color ? parseInt(cfg.color.replace('#', ''), 16) : colors[i % colors.length];
+    const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5, metalness: 0.5 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(cfg.position.x, cfg.position.y, cfg.position.z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.traverse(c => { if (c.isMesh) c.userData._origMat = c.material; });
+
+    const group = new THREE.Group();
+    group.add(mesh);
+    modelRoot.add(group);
+
+    state.parts.push({
+      ...cfg,
+      mesh: group,
+      configured: !!cfg.installDir,
+    });
+  });
+
+  setTimeout(() => {
+    hideLoading();
+    showViewport();
+    renderPartList();
+    renderSteps();
+    document.getElementById('previewBar').style.display = '';
+    document.getElementById('btnExport').disabled = false;
+    saveOriginalPositions();
+    showToast('资源配置已加载');
+  }, 500);
+}
+
+// 修改导出配置函数，保存到资源
+window.exportConfig = function() {
+  // 保存到资源
+  saveResourceConfig();
+
+  const config = {
+    version: '1.0',
+    exportTime: new Date().toISOString(),
+    resourceId: currentResourceId,
+    modelFile: document.getElementById('fileName').textContent,
+    parts: state.parts.map(p => ({
+      id: p.id,
+      name: p.name,
+      material: p.material,
+      color: p.color,
+      position: p.position,
+      rotation: p.rotation,
+      installDirection: p.installDir,
+      assemblyStep: p.stepOrder,
+      note: p.note,
+      configured: p.configured,
+    }))
+  };
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `assembly_config_${currentResourceId || 'export'}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('配置已保存并导出');
+};
+
+// init
+renderPartList();
+renderSteps();
+
+// 检查URL参数，加载资源配置
+loadResourceConfig();
+</script>
+</body>
+</html>

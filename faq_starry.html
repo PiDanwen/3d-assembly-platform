@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星瀚常见问题解答</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #F8F8F8;
+    padding: 24px 16px;
+    color: #1A1A1A;
+  }
+  .page {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1A1A1A;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .faq-item {
+    background: #fff;
+    border: 1px solid #E5E5E5;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+  .faq-q {
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #fff;
+  }
+  .q-badge {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #E6F1FB;
+    color: #185FA5;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  .q-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1A1A1A;
+    flex: 1;
+    line-height: 1.6;
+  }
+  .faq-a {
+    padding: 0 16px 14px 48px;
+    border-top: 1px solid #F0F0F0;
+    padding-top: 12px;
+  }
+  .step-list {
+    list-style: none;
+  }
+  .step-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 9px;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.65;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #F1EFE8;
+    color: #666;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .step-num.blue { background: #E6F1FB; color: #185FA5; }
+  .step-num.green { background: #EAF3DE; color: #3B6D11; }
+  .step-num.gray { background: #F1EFE8; color: #666; }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-right: 4px;
+  }
+  .tag-ios { background: #E6F1FB; color: #185FA5; }
+  .tag-android { background: #EAF3DE; color: #3B6D11; }
+  .tag-mac { background: #F1EFE8; color: #555; }
+  .tag-win { background: #F1EFE8; color: #555; }
+
+  .tip-box {
+    background: #F5F5F5;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #666;
+    margin-top: 10px;
+    line-height: 1.6;
+    border-left: 3px solid #DDD;
+  }
+
+  .ver-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .ver-card {
+    background: #FAFAFA;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #333;
+    border: 1px solid #EEE;
+  }
+  .ver-card strong { display: block; margin-bottom: 2px; }
+
+  a { color: #185FA5; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  @media print {
+    body { background: #fff; padding: 16px; }
+    .faq-item { border: 1px solid #DDD; margin-bottom: 10px; }
+  }
+  @page {
+    margin: 16mm;
+    size: A4;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>星瀚常见问题解答</h1>
+
+  <!-- Q1 -->
+  <div class="faq-item">
+    <div class="faq-q">
+      <div class="q-badge">Q1</div>
+      <div class="q-text">题目中连接星瀚失败，怎么办？</div>
+    </div>
+    <div class="faq-a">
+      <ul class="step-list">
+        <li class="step-item">
+          <div class="step-num blue">1</div>
+          <div><b>移动端</b>：确认手机/平板的<strong>蓝牙权限</strong>已开启</div>
+        </li>
+        <li class="step-item">
+          <div class="step-num green">2</div>
+          <div><b>PC 端</b>：确认 <strong>USB 线</strong>已正确连接电脑</div>
+        </li>
+        <li class="step-item">
+          <div class="step-num gray">3</div>
+          <div>确认星瀚处于<strong>开机状态</strong></div>
+        </li>
+        <li class="step-item">
+          <div class="step-num gray">4</div>
+          <div>确保星瀚<strong>没有被其他设备占用</strong>（同一时间只能连接一台设备）</div>
+        </li>
+      </ul>
+      <div class="tip-box">以上步骤排查后仍无法连接？请提供您的<b>用户 ID</b> 及<b>操作时间（月/日 时:分）</b>，联系客服进一步排查。</div>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="faq-item">
+    <div class="faq-q">
+      <div class="q-badge">Q2</div>
+      <div class="q-text">Wi-Fi 连接过程中闪出"星瀚连接失败"页面</div>
+    </div>
+    <div class="faq-a">
+      <p style="font-size:13px;color:#666;margin-bottom:10px">此问题已在最新版本客户端中修复，请更新到以下版本：</p>
+      <div class="ver-grid">
+        <div class="ver-card">
+          <strong><span class="tag tag-ios">iOS</span></strong>
+          V5.21.0<br>App Store 搜索更新
+        </div>
+        <div class="ver-card">
+          <strong><span class="tag tag-android">Android</span></strong>
+          V5.21.1<br>应用商店搜索；无此版本请访问：
+          <a href="https://ybccode.com/download/ybc" target="_blank">ybccode.com/download/ybc</a>
+        </div>
+        <div class="ver-card">
+          <strong><span class="tag tag-mac">Mac</span></strong>
+          V5.21.0<br>官网下载安装
+        </div>
+        <div class="ver-card">
+          <strong><span class="tag tag-win">Windows</span></strong>
+          V5.21.0<br>官网下载安装
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="faq-item">
+    <div class="faq-q">
+      <div class="q-badge">Q3</div>
+      <div class="q-text">Wi-Fi 连接时搜索不到任何信号</div>
+    </div>
+    <div class="faq-a">
+      <p style="font-size:13px;color:#666;margin-bottom:10px">建议先更新客户端（版本要求同 Q2），再按以下步骤操作：</p>
+      <ul class="step-list">
+        <li class="step-item">
+          <div class="step-num blue">1</div>
+          <div>将控制器<strong>靠近家里的路由器</strong>，减少信号干扰</div>
+        </li>
+        <li class="step-item">
+          <div class="step-num green">2</div>
+          <div><strong>多尝试几次</strong>搜索——星瀚 v2 支持 5GHz 频段，可搜索的 Wi-Fi 信号更多，但首次加载较慢，若 30 秒内无返回会显示为空，<strong>重试即可成功</strong></div>
+        </li>
+      </ul>
+      <div class="tip-box">版本要求：<b>iOS / Mac / Windows</b> ≥ V5.21.0　<b>Android</b> ≥ V5.21.1</div>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="faq-item">
+    <div class="faq-q">
+      <div class="q-badge">Q4</div>
+      <div class="q-text">星瀚主控"假死机"，无法开机或关机</div>
+    </div>
+    <div class="faq-a">
+      <ul class="step-list">
+        <li class="step-item">
+          <div class="step-num blue">1</div>
+          <div>找一根细针（回形针、手机卡针均可），捅入<strong>充电口左侧的小圆孔（复位孔）</strong>，听到轻微震动后再重新开机，即可恢复正常</div>
+        </li>
+      </ul>
+      <div class="tip-box">已知触发原因：在"测量尺"程序运行时直接关机，有概率导致主控假死。按上述步骤复位即可解决，无需送修。</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

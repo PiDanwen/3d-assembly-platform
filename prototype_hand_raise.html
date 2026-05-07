@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全局IM系统 · 三端适配原型</title>
+  <style>
+    :root {
+      --primary: #4F46E5;
+      --primary-light: #EEF2FF;
+      --danger: #EF4444;
+      --text-primary: #1F2937;
+      --text-secondary: #6B7280;
+      --text-muted: #9CA3AF;
+      --bg-white: #FFFFFF;
+      --bg-gray: #F9FAFB;
+      --bg-light: #F3F4F6;
+      --border: #E5E7EB;
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+      --radius: 12px;
+      --teacher-color: #8B5CF6;
+      --teacher-bg: #F5F3FF;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      background: #0f0f23;
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* ========== 顶部导航 ========== */
+    .header {
+      background: #0a0a1a;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header h1 {
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .header h1 span {
+      color: var(--primary);
+    }
+
+    .device-tabs {
+      display: flex;
+      gap: 6px;
+      background: rgba(255,255,255,0.05);
+      padding: 4px;
+      border-radius: 10px;
+    }
+
+    .device-tab {
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      transition: all 0.2s;
+    }
+
+    .device-tab:hover {
+      color: white;
+    }
+
+    .device-tab.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .scene-tabs {
+      display: flex;
+      gap: 16px;
+      margin-left: auto;
+    }
+
+    .scene-tab {
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      color: rgba(255,255,255,0.4);
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .scene-tab:hover { color: rgba(255,255,255,0.7); }
+    .scene-tab.active {
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* ========== 主内容区 ========== */
+    .main {
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .device-wrapper {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .device-wrapper.active { display: flex; }
+
+    .device-label {
+      color: rgba(255,255,255,0.6);
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ========== 手机模拟器 ========== */
+    .phone-frame {
+      width: 375px;
+      height: 812px;
+      background: #1c1c1e;
+      border-radius: 44px;
+      padding: 12px;
+      box-shadow: 0 0 0 3px #3a3a3c, 0 20px 60px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .phone-notch {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 30px;
+      background: #1c1c1e;
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      background: white;
+      border-radius: 34px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .phone-status-bar {
+      height: 44px;
+      padding: 12px 24px 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: 600;
+      color: #000;
+    }
+
+    .phone-content {
+      height: calc(100% - 44px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ========== Pad模拟器 ========== */
+    .pad-frame {
+      width: 768px;
+      height: 1024px;
+      background: #1c1c1e;
+      border-radius: 24px;
+      padding: 16px;
+      box-shadow: 0 0 0 3px #3a3a3c, 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .pad-screen {
+      width: 100%;
+      height: 100%;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pad-status-bar {
+      height: 48px;
+      padding: 16px 32px 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 15px;
+      font-weight: 600;
+      color: #000;
+    }
+
+    .pad-content {
+      height: calc(100% - 48px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ========== PC模拟器 ========== */
+    .pc-frame {
+      width: 1200px;
+      height: 700px;
+      background: #2d2d2d;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .pc-topbar {
+      height: 40px;
+      background: #1c1c1e;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+    }
+
+    .pc-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .pc-dot.red { background: #ff5f56; }
+    .pc-dot.yellow { background: #ffbd2e; }
+    .pc-dot.green { background: #27c93f; }
+
+    .pc-url {
+      flex: 1;
+      margin-left: 16px;
+      background: #2d2d2d;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .pc-content {
+      display: flex;
+      height: calc(100% - 40px);
+    }
+
+    .pc-sidebar {
+      width: 280px;
+      background: #f9fafb;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pc-main {
+      flex: 1;
+      background: white;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ========== 通用组件 ========== */
+    .nav-bar {
+      height: 56px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .nav-bar .back {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-bar h2 {
+      flex: 1;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    /* ========== 悬浮按钮 (手机/Pad) ========== */
+    .fab {
+      position: fixed;
+      width: 56px;
+      height: 56px;
+      background: var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+      cursor: pointer;
+      z-index: 50;
+      transition: transform 0.2s;
+    }
+
+    .fab:hover { transform: scale(1.05); }
+
+    .fab svg { width: 24px; height: 24px; fill: white; }
+
+    .fab .badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 20px;
+      height: 20px;
+      background: var(--danger);
+      color: white;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+      border: 2px solid white;
+    }
+
+    /* ========== 侧边抽屉 (Pad) ========== */
+    .side-drawer {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 460px;
+      background: white;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      z-index: 60;
+    }
+
+    .side-drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drawer-header h3 { font-size: 18px; font-weight: 600; }
+
+    .drawer-tabs {
+      display: flex;
+      padding: 12px 20px;
+      gap: 8px;
+    }
+
+    .drawer-tab {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .drawer-tab.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .session-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .session-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .session-item:hover { background: var(--bg-light); }
+    .session-item.active { background: var(--primary-light); }
+
+    .session-item .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--teacher-bg);
+      color: var(--teacher-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .session-item .info { flex: 1; min-width: 0; }
+
+    .session-item .info .name {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .session-item .info .course-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      background: var(--bg-light);
+      border-radius: 4px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .session-item .info .preview {
+      font-size: 13px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .session-item .meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .session-item .meta .time {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .session-item .meta .unread {
+      min-width: 18px;
+      height: 18px;
+      background: var(--danger);
+      color: white;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+    }
+
+    .session-item .meta .unread.zero {
+      background: var(--bg-light);
+      color: var(--text-muted);
+    }
+
+    /* ========== 全屏抽屉 (手机) ========== */
+    .full-drawer {
+      position: absolute;
+      inset: 0;
+      background: white;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      z-index: 60;
+    }
+
+    .full-drawer.open { transform: translateY(0); }
+
+    /* ========== 聊天气泡 ========== */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chat-header .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--teacher-bg);
+      color: var(--teacher-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .chat-header .name { font-size: 16px; font-weight: 600; }
+    .chat-header .course { font-size: 12px; color: var(--text-secondary); }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f5f5f5;
+    }
+
+    .message {
+      display: flex;
+      gap: 8px;
+      max-width: 80%;
+    }
+
+    .message.sent { align-self: flex-end; flex-direction: row-reverse; }
+    .message.received { align-self: flex-start; }
+
+    .message .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--teacher-bg);
+      color: var(--teacher-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+      align-self: flex-end;
+    }
+
+    .message.sent .avatar {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .message .bubble {
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .message.received .bubble {
+      background: white;
+      border-top-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .message.sent .bubble {
+      background: var(--primary);
+      color: white;
+      border-top-right-radius: 4px;
+    }
+
+    .message .time {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .message.sent .time { text-align: left; }
+
+    .chat-input {
+      padding: 12px 16px;
+      background: white;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 15px;
+    }
+
+    .chat-input input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .chat-input button {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat-input button svg {
+      width: 18px;
+      height: 18px;
+      fill: white;
+    }
+
+    /* ========== 气泡通知 ========== */
+    .toast {
+      position: absolute;
+      top: 60px;
+      right: 16px;
+      width: calc(100% - 32px);
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .toast .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--teacher-bg);
+      color: var(--teacher-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .toast .content { flex: 1; }
+
+    .toast .content .name {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .toast .content .msg {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* ========== PC 顶部导航 ========== */
+    .pc-nav {
+      height: 56px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 24px;
+    }
+
+    .pc-nav .logo {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .pc-nav .nav-item {
+      padding: 8px 12px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pc-nav .nav-item:hover {
+      background: var(--bg-light);
+      color: var(--text-primary);
+    }
+
+    .pc-nav .nav-item.active {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .pc-nav .nav-item .badge {
+      min-width: 16px;
+      height: 16px;
+      background: var(--danger);
+      color: white;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    .pc-sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pc-sidebar-header h3 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .pc-sidebar-header input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    /* ========== PC聊天区 ========== */
+    .pc-chat-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pc-chat-header .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--teacher-bg);
+      color: var(--teacher-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .pc-chat-header .name { font-size: 16px; font-weight: 600; }
+    .pc-chat-header .course { font-size: 12px; color: var(--text-secondary); }
+
+    .pc-chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: #f5f5f5;
+    }
+
+    .pc-message {
+      display: flex;
+      gap: 10px;
+      max-width: 65%;
+    }
+
+    .pc-message.sent { align-self: flex-end; flex-direction: row-reverse; }
+    .pc-message.received { align-self: flex-start; }
+
+    .pc-message .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--teacher-bg);
+      color: var(--teacher-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+      align-self: flex-end;
+    }
+
+    .pc-message.sent .avatar {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .pc-message .bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .pc-message.received .bubble {
+      background: white;
+      border-top-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .pc-message.sent .bubble {
+      background: var(--primary);
+      color: white;
+      border-top-right-radius: 4px;
+    }
+
+    .pc-chat-input {
+      padding: 16px 20px;
+      background: white;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .pc-chat-input textarea {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      resize: none;
+      height: 44px;
+      max-height: 100px;
+      font-family: inherit;
+    }
+
+    .pc-chat-input textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .pc-chat-input button {
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .pc-chat-input button:hover {
+      background: #4338CA;
+    }
+
+    /* ========== 场景说明 ========== */
+    .scene-panel {
+      width: 280px;
+      background: rgba(255,255,255,0.05);
+      border-radius: var(--radius);
+      padding: 20px;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .scene-panel h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: white;
+    }
+
+    .scene-panel ul {
+      list-style: none;
+      font-size: 12px;
+      line-height: 1.8;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .scene-panel li::before {
+      content: "•";
+      color: var(--primary);
+      margin-right: 8px;
+    }
+
+    /* ========== 规格标签 ========== */
+    .spec-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(79, 70, 229, 0.2);
+      color: #a5b4fc;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    /* ========== 底部安全区 ========== */
+    .home-indicator {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 134px;
+      height: 5px;
+      background: #000;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <div class="header">
+    <h1>全局IM系统 <span>· 三端适配</span></h1>
+    <div class="device-tabs">
+      <button class="device-tab active" onclick="switchDevice('phone')">📱 手机端</button>
+      <button class="device-tab" onclick="switchDevice('pad')">📲 Pad端</button>
+      <button class="device-tab" onclick="switchDevice('pc')">💻 PC端</button>
+    </div>
+    <div class="scene-tabs">
+      <span class="scene-tab active">会话列表</span>
+      <span class="scene-tab">聊天详情</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- ========== 手机端 ========== -->
+    <div class="device-wrapper active" id="phone-wrapper">
+      <span class="device-label">iPhone 15 Pro · 375 × 812</span>
+      <div class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <!-- 状态栏 -->
+          <div class="phone-status-bar">
+            <span>9:41</span>
+            <span>📶 📡 🔋</span>
+          </div>
+          <!-- 内容区 -->
+          <div class="phone-content">
+            <!-- 模拟课程页面 -->
+            <div style="height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
+              <div style="color: white; font-size: 14px; margin-bottom: 16px;">Python数据分析基础</div>
+              <div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; color: rgba(255,255,255,0.7); font-size: 13px;">
+                课程内容区域...
+              </div>
+            </div>
+
+            <!-- 悬浮按钮 -->
+            <div class="fab" style="bottom: 100px; right: 20px;" onclick="togglePhoneDrawer()">
+              <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+              <span class="badge">12</span>
+            </div>
+
+            <!-- 全屏抽屉 -->
+            <div class="full-drawer" id="phoneDrawer">
+              <div class="nav-bar">
+                <div class="back" onclick="togglePhoneDrawer()">✕</div>
+                <h2>消息中心</h2>
+              </div>
+              <div class="drawer-tabs" style="padding: 12px 16px;">
+                <div class="drawer-tab active">全部</div>
+                <div class="drawer-tab">未读</div>
+              </div>
+              <div class="session-list">
+                <div class="session-item" onclick="showPhoneChat()">
+                  <div class="avatar">张</div>
+                  <div class="info">
+                    <div class="name">张老师 <span class="course-tag">Python</span></div>
+                    <div class="preview">同学你好，有什么问题可以...</div>
+                  </div>
+                  <div class="meta">
+                    <span class="time">刚刚</span>
+                    <span class="unread">3</span>
+                  </div>
+                </div>
+                <div class="session-item">
+                  <div class="avatar">李</div>
+                  <div class="info">
+                    <div class="name">李老师 <span class="course-tag">Java</span></div>
+                    <div class="preview">好的，我已经收到你的问题</div>
+                  </div>
+                  <div class="meta">
+                    <span class="time">10:30</span>
+                    <span class="unread">9</span>
+                  </div>
+                </div>
+                <div class="session-item">
+                  <div class="avatar">王</div>
+                  <div class="info">
+                    <div class="name">王老师 <span class="course-tag">前端</span></div>
+                    <div class="preview">课程资料已上传，请查收</div>
+                  </div>
+                  <div class="meta">
+                    <span class="time">昨天</span>
+                    <span class="unread zero">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 聊天页面 -->
+            <div id="phoneChat" style="position: absolute; inset: 0; background: white; display: none; flex-direction: column;">
+              <div class="nav-bar">
+                <div class="back" onclick="closePhoneChat()">‹</div>
+                <h2>张老师</h2>
+              </div>
+              <div class="chat-area">
+                <div class="chat-messages">
+                  <div class="message received">
+                    <div class="avatar">张</div>
+                    <div>
+                      <div class="bubble">同学你好，有什么问题可以随时问我哦～</div>
+                      <div class="time">14:32</div>
+                    </div>
+                  </div>
+                  <div class="message sent">
+                    <div class="avatar">我</div>
+                    <div>
+                      <div class="bubble">老师好！我想问一下装饰器的问题</div>
+                      <div class="time">14:35</div>
+                    </div>
+                  </div>
+                  <div class="message received">
+                    <div class="avatar">张</div>
+                    <div>
+                      <div class="bubble">装饰器是Python中很强大的特性，它本质上是一个函数</div>
+                      <div class="time">14:36</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="chat-input">
+                  <input type="text" placeholder="输入消息...">
+                  <button>
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 气泡通知 -->
+            <div class="toast" id="phoneToast">
+              <div class="avatar">张</div>
+              <div class="content">
+                <div class="name">张老师</div>
+                <div class="msg">同学你好，你上次问的问题有答案了</div>
+              </div>
+            </div>
+
+            <div class="home-indicator"></div>
+          </div>
+        </div>
+      </div>
+      <div class="scene-panel">
+        <span class="spec-tag">手机端设计规范</span>
+        <h3>设计要点</h3>
+        <ul>
+          <li>悬浮按钮右下角固定</li>
+          <li>会话列表全屏覆盖</li>
+          <li>底部导航+安全区</li>
+          <li>气泡通知顶部弹出</li>
+          <li>聊天气泡宽度80%</li>
+          <li>触控热区最小44px</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ========== Pad端 ========== -->
+    <div class="device-wrapper" id="pad-wrapper">
+      <span class="device-label">iPad Pro 11" · 768 × 1024</span>
+      <div class="pad-frame">
+        <div class="pad-screen">
+          <!-- 状态栏 -->
+          <div class="pad-status-bar">
+            <span>9:41</span>
+            <span>📶 📡 🔋</span>
+          </div>
+          <!-- 内容区 -->
+          <div class="pad-content">
+            <!-- 模拟课程页面 -->
+            <div style="height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 32px;">
+              <div style="color: white; font-size: 16px; margin-bottom: 20px;">Python数据分析基础</div>
+              <div style="display: flex; gap: 24px;">
+                <div style="flex: 1; background: rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; color: rgba(255,255,255,0.6);">
+                  代码编辑区
+                </div>
+                <div style="width: 280px; background: rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; color: rgba(255,255,255,0.6);">
+                  课程目录
+                </div>
+              </div>
+            </div>
+
+            <!-- 悬浮按钮 -->
+            <div class="fab" style="bottom: 40px; right: 40px;" onclick="togglePadDrawer()">
+              <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+              <span class="badge">12</span>
+            </div>
+
+            <!-- 侧边抽屉 -->
+            <div class="side-drawer" id="padDrawer">
+              <div class="drawer-header">
+                <h3>消息中心</h3>
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--bg-light); display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="togglePadDrawer()">✕</div>
+              </div>
+              <div class="drawer-tabs">
+                <div class="drawer-tab active">全部会话</div>
+                <div class="drawer-tab">未读</div>
+              </div>
+              <div class="session-list">
+                <div class="session-item" onclick="showPadChat()">
+                  <div class="avatar">张</div>
+                  <div class="info">
+                    <div class="name">张老师 <span class="course-tag">Python</span></div>
+                    <div class="preview">同学你好，有什么问题可以随时问我哦～</div>
+                  </div>
+                  <div class="meta">
+                    <span class="time">刚刚</span>
+                    <span class="unread">3</span>
+                  </div>
+                </div>
+                <div class="session-item">
+                  <div class="avatar">李</div>
+                  <div class="info">
+                    <div class="name">李老师 <span class="course-tag">Java</span></div>
+                    <div class="preview">好的，我已经收到你的问题</div>
+                  </div>
+                  <div class="meta">
+                    <span class="time">10:30</span>
+                    <span class="unread">9</span>
+                  </div>
+                </div>
+                <div class="session-item">
+                  <div class="avatar">王</div>
+                  <div class="info">
+                    <div class="name">王老师 <span class="course-tag">前端</span></div>
+                    <div class="preview">课程资料已上传，请查收</div>
+                  </div>
+                  <div class="meta">
+                    <span class="time">昨天</span>
+                    <span class="unread zero">0</span>
+                  </div>
+                </div>
+                <div class="session-item">
+                  <div class="avatar">陈</div>
+                  <div class="info">
+                    <div class="name">陈老师 <span class="course-tag">算法</span></div>
+                    <div class="preview">周末有空可以约一次辅导</div>
+                  </div>
+                  <div class="meta">
+                    <span class="time">周一</span>
+                    <span class="unread zero">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 聊天页面 -->
+            <div id="padChat" style="position: absolute; right: 460px; top: 0; bottom: 0; width: calc(100% - 460px); background: white; display: none; flex-direction: column;">
+              <div class="chat-header">
+                <div class="avatar">张</div>
+                <div>
+                  <div class="name">张老师</div>
+                  <div class="course">Python数据分析基础</div>
+                </div>
+              </div>
+              <div class="chat-area">
+                <div class="chat-messages">
+                  <div class="message received">
+                    <div class="avatar">张</div>
+                    <div>
+                      <div class="bubble">同学你好，有什么问题可以随时问我哦～</div>
+                      <div class="time">14:32</div>
+                    </div>
+                  </div>
+                  <div class="message sent">
+                    <div class="avatar">我</div>
+                    <div>
+                      <div class="bubble">老师好！我想问一下装饰器的问题</div>
+                      <div class="time">14:35</div>
+                    </div>
+                  </div>
+                  <div class="message received">
+                    <div class="avatar">张</div>
+                    <div>
+                      <div class="bubble">装饰器是Python中很强大的特性，它本质上是一个函数，可以用来扩展原函数的功能</div>
+                      <div class="time">14:36</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="chat-input">
+                  <input type="text" placeholder="输入消息...">
+                  <button>
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 气泡通知 -->
+            <div class="toast" id="padToast" style="width: 400px; right: 20px;">
+              <div class="avatar">张</div>
+              <div class="content">
+                <div class="name">张老师</div>
+                <div class="msg">同学你好，你上次问的问题有答案了</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scene-panel">
+        <span class="spec-tag">Pad端设计规范</span>
+        <h3>设计要点</h3>
+        <ul>
+          <li>悬浮按钮右下角固定</li>
+          <li>侧边抽屉宽度60%</li>
+          <li>支持列表+聊天并排</li>
+          <li>气泡通知右侧弹出</li>
+          <li>聊天气泡宽度70%</li>
+          <li>双栏布局优先体验</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ========== PC端 ========== -->
+    <div class="device-wrapper" id="pc-wrapper">
+      <span class="device-label">Mac/Windows · 1200 × 700</span>
+      <div class="pc-frame">
+        <!-- 顶部栏 -->
+        <div class="pc-topbar">
+          <div class="pc-dot red"></div>
+          <div class="pc-dot yellow"></div>
+          <div class="pc-dot green"></div>
+          <div class="pc-url">编程课平台 - Python数据分析基础</div>
+        </div>
+        <!-- 内容区 -->
+        <div class="pc-content">
+          <!-- 左侧会话列表 -->
+          <div class="pc-sidebar">
+            <div class="pc-sidebar-header">
+              <h3>消息中心</h3>
+              <input type="text" placeholder="搜索会话...">
+            </div>
+            <div class="session-list" style="padding: 8px;">
+              <div class="session-item" onclick="showPcChat()">
+                <div class="avatar">张</div>
+                <div class="info">
+                  <div class="name">张老师 <span class="course-tag">Python</span></div>
+                  <div class="preview">同学你好，有什么问题可以随时问我哦～</div>
+                </div>
+                <div class="meta">
+                  <span class="time">刚刚</span>
+                  <span class="unread">3</span>
+                </div>
+              </div>
+              <div class="session-item">
+                <div class="avatar">李</div>
+                <div class="info">
+                  <div class="name">李老师 <span class="course-tag">Java</span></div>
+                  <div class="preview">好的，我已经收到你的问题</div>
+                </div>
+                <div class="meta">
+                  <span class="time">10:30</span>
+                  <span class="unread">9</span>
+                </div>
+              </div>
+              <div class="session-item">
+                <div class="avatar">王</div>
+                <div class="info">
+                  <div class="name">王老师 <span class="course-tag">前端</span></div>
+                  <div class="preview">课程资料已上传，请查收</div>
+                </div>
+                <div class="meta">
+                  <span class="time">昨天</span>
+                  <span class="unread zero">0</span>
+                </div>
+              </div>
+              <div class="session-item">
+                <div class="avatar">陈</div>
+                <div class="info">
+                  <div class="name">陈老师 <span class="course-tag">算法</span></div>
+                  <div class="preview">周末有空可以约一次辅导</div>
+                </div>
+                <div class="meta">
+                  <span class="time">周一</span>
+                  <span class="unread zero">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 右侧聊天区 -->
+          <div class="pc-main" id="pcChat">
+            <div class="pc-chat-header">
+              <div class="avatar">张</div>
+              <div>
+                <div class="name">张老师</div>
+                <div class="course">Python数据分析基础 · 在线</div>
+              </div>
+            </div>
+            <div class="pc-chat-messages">
+              <div class="pc-message received">
+                <div class="avatar">张</div>
+                <div>
+                  <div class="bubble">同学你好，有什么问题可以随时问我哦～</div>
+                </div>
+              </div>
+              <div class="pc-message sent">
+                <div class="avatar">我</div>
+                <div>
+                  <div class="bubble">老师好！我想问一下装饰器的问题</div>
+                </div>
+              </div>
+              <div class="pc-message received">
+                <div class="avatar">张</div>
+                <div>
+                  <div class="bubble">装饰器是Python中很强大的特性，它本质上是一个函数，可以用来扩展原函数的功能，而不需要修改原函数的代码</div>
+                </div>
+              </div>
+              <div class="pc-message sent">
+                <div class="avatar">我</div>
+                <div>
+                  <div class="bubble">明白了！谢谢老师</div>
+                </div>
+              </div>
+            </div>
+            <div class="pc-chat-input">
+              <textarea placeholder="输入消息..."></textarea>
+              <button>发送</button>
+            </div>
+          </div>
+          <!-- 无选中聊天的空状态 -->
+          <div id="pcEmpty" style="flex: 1; display: flex; align-items: center; justify-content: center; background: #fafafa; flex-direction: column; gap: 12px;">
+            <div style="font-size: 48px;">💬</div>
+            <div style="color: var(--text-muted); font-size: 14px;">选择一个会话开始聊天</div>
+          </div>
+        </div>
+      </div>
+      <div class="scene-panel">
+        <span class="spec-tag">PC端设计规范</span>
+        <h3>设计要点</h3>
+        <ul>
+          <li>无悬浮按钮，使用导航栏</li>
+          <li>左侧固定会话列表</li>
+          <li>左右分栏布局</li>
+          <li>列表宽度280px</li>
+          <li>聊天气泡宽度65%</li>
+          <li>支持多会话快速切换</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 设备切换
+    function switchDevice(device) {
+      document.querySelectorAll('.device-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.device-wrapper').forEach(w => w.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(device + '-wrapper').classList.add('active');
+    }
+
+    // 手机端抽屉
+    function togglePhoneDrawer() {
+      document.getElementById('phoneDrawer').classList.toggle('open');
+    }
+
+    function showPhoneChat() {
+      document.getElementById('phoneDrawer').classList.remove('open');
+      document.getElementById('phoneChat').style.display = 'flex';
+    }
+
+    function closePhoneChat() {
+      document.getElementById('phoneChat').style.display = 'none';
+    }
+
+    // Pad端抽屉
+    function togglePadDrawer() {
+      document.getElementById('padDrawer').classList.toggle('open');
+    }
+
+    function showPadChat() {
+      document.getElementById('padDrawer').classList.remove('open');
+      document.getElementById('padChat').style.display = 'flex';
+    }
+
+    // PC端
+    function showPcChat() {
+      document.getElementById('pcEmpty').style.display = 'none';
+      document.getElementById('pcChat').style.display = 'flex';
+    }
+  </script>
+</body>
+</html>

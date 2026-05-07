@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>举手求助功能 — 方案设计</title>
+<style>
+  :root {
+    --primary: #6C5CE7;
+    --primary-light: #A29BFE;
+    --bg: #F0F2F5;
+    --card-bg: #FFFFFF;
+    --text: #2D3436;
+    --text-secondary: #636E72;
+    --border: #DFE6E9;
+    --success: #00B894;
+    --success-bg: #E8F8F5;
+    --warning: #FDCB6E;
+    --danger: #E17055;
+    --danger-bg: #FFF3E0;
+    --info: #0984E3;
+    --info-bg: #EBF5FB;
+    --error: #D63031;
+    --error-bg: #FFEAEA;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 40px 20px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* Header */
+  .doc-header {
+    background: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 50%, #74B9FF 100%);
+    border-radius: 16px;
+    padding: 40px 48px;
+    color: white;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .doc-header::before {
+    content: ''; position: absolute; width: 200px; height: 200px;
+    border-radius: 50%; background: rgba(255,255,255,0.08); top: -60px; right: -40px;
+  }
+  .doc-header::after {
+    content: ''; position: absolute; width: 120px; height: 120px;
+    border-radius: 50%; background: rgba(255,255,255,0.06); bottom: -30px; left: 60px;
+  }
+  .doc-header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; position: relative; }
+  .doc-header .subtitle { font-size: 15px; opacity: 0.85; position: relative; }
+  .doc-header .meta {
+    margin-top: 16px; display: flex; gap: 20px; font-size: 13px; opacity: 0.75; position: relative;
+  }
+
+  /* Section */
+  .section { margin-bottom: 48px; }
+  .section-title { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .section-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 10px; background: var(--primary);
+    color: white; font-weight: 700; font-size: 14px; flex-shrink: 0;
+  }
+  .section-title h2 { font-size: 20px; font-weight: 600; }
+
+  /* Card */
+  .card {
+    background: var(--card-bg); border-radius: 12px; padding: 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid var(--border); margin-bottom: 24px;
+  }
+  .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+
+  /* ========== 泳道流程图 ========== */
+  .swimlane-flowchart {
+    background: var(--card-bg); border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06); border: 1px solid var(--border);
+    overflow: hidden; margin-bottom: 24px;
+  }
+  .swimlane-header {
+    display: grid; border-bottom: 2px solid var(--border); background: #F8F9FD;
+  }
+  .swimlane-label {
+    padding: 14px 20px; font-weight: 700; font-size: 14px; text-align: center;
+    border-right: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .swimlane-label:last-child { border-right: none; }
+  .swimlane-label .role-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: white; flex-shrink: 0;
+  }
+  .swimlane-label.student .role-icon { background: var(--success); }
+  .swimlane-label.student { color: var(--success); }
+  .swimlane-label.system .role-icon { background: var(--info); }
+  .swimlane-label.system { color: var(--info); }
+  .swimlane-label.teacher .role-icon { background: var(--primary); }
+  .swimlane-label.teacher { color: var(--primary); }
+
+  .swimlane-body { display: grid; position: relative; }
+  .swimlane-col {
+    padding: 28px 16px; border-right: 1px solid #F5F5F5;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px; position: relative;
+  }
+  .swimlane-col:last-child { border-right: none; }
+
+  /* 节点 */
+  .node {
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; font-size: 13px; font-weight: 500;
+    max-width: 180px; min-height: 42px; padding: 8px 14px;
+    z-index: 2; position: relative;
+  }
+  .node .sub { display: block; font-size: 11px; opacity: 0.65; margin-top: 2px; }
+
+  /* 起止 */
+  .node.terminal { border-radius: 21px; padding: 10px 26px; font-weight: 600; }
+  .node.terminal.student { background: var(--success); color: white; }
+  .node.terminal.teacher { background: var(--primary); color: white; }
+
+  /* 操作 - 边框 */
+  .node.action { border-radius: 8px; background: white; }
+  .node.action.student { border: 2px solid var(--success); color: var(--success); }
+  .node.action.system { border: 2px solid var(--info); color: var(--info); }
+  .node.action.teacher { border: 2px solid var(--primary); color: var(--primary); }
+
+  /* 操作 - 填充 */
+  .node.fill { border-radius: 8px; border: none; }
+  .node.fill.student { background: var(--success-bg); color: var(--success); border: 1.5px solid var(--success); }
+  .node.fill.system { background: var(--info-bg); color: var(--info); border: 1.5px solid var(--info); }
+  .node.fill.teacher { background: #EDEAFF; color: var(--primary); border: 1.5px solid var(--primary); }
+
+  /* 判断 - 菱形 */
+  .node.decision {
+    background: var(--danger-bg); border: 2px solid var(--danger);
+    color: var(--danger); font-weight: 600; padding: 10px 16px;
+    position: relative; z-index: 3;
+  }
+  .node.decision::before {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 78px; height: 78px; border: 2px solid var(--danger);
+    border-radius: 4px; z-index: -1; background: var(--danger-bg);
+  }
+
+  /* 系统后台 - 虚线 */
+  .node.sys-bg {
+    border-radius: 8px; background: var(--info-bg);
+    border: 2px dashed var(--info); color: var(--info); font-size: 12px;
+  }
+
+  /* 异常 - 红虚线 */
+  .node.error {
+    border-radius: 8px; background: var(--error-bg);
+    border: 2px dashed var(--error); color: var(--error); font-size: 12px;
+  }
+
+  /* 空占位 */
+  .node.spacer { visibility: hidden; border: none; background: none; min-height: 42px; }
+
+  /* 条件标签 */
+  .cond { font-size: 11px; font-weight: 600; position: absolute; z-index: 4; padding: 1px 7px; border-radius: 3px; }
+  .cond.yes { background: var(--success-bg); color: var(--success); }
+  .cond.no { background: var(--error-bg); color: var(--error); }
+
+  /* 箭头 SVG */
+  .arrows-svg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 1;
+  }
+  .arrow-line { fill: none; stroke: #636E72; stroke-width: 1.5; }
+  .arrow-line.dashed { stroke-dasharray: 6 3; stroke: #B2BEC3; }
+  .arrow-line.error-line { stroke: var(--error); stroke-dasharray: 6 3; }
+  .arrow-line.cross { stroke-dasharray: 4 2; }
+
+  /* 图例 */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 20px; padding: 20px 28px;
+    background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    border: 1px solid var(--border); margin-bottom: 24px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+
+  /* Table */
+  .s-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+  .s-table th { background: var(--primary); color: white; padding: 12px 16px; text-align: left; font-weight: 600; }
+  .s-table th:first-child { border-radius: 8px 0 0 0; }
+  .s-table th:last-child { border-radius: 0 8px 0 0; }
+  .s-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .s-table tr:last-child td { border-bottom: none; }
+  .s-table tr:hover td { background: #FAFBFE; }
+
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .tag-core { background: var(--success-bg); color: var(--success); }
+  .tag-edge { background: #FFF9E6; color: #D4A017; }
+  .tag-err { background: var(--error-bg); color: var(--error); }
+  .tag-role-s { background: var(--success-bg); color: var(--success); }
+  .tag-role-t { background: #EDEAFF; color: var(--primary); }
+  .tag-role-a { background: var(--danger-bg); color: var(--danger); }
+
+  /* Tree */
+  .tree { padding-left: 0; list-style: none; }
+  .tree li { position: relative; padding: 5px 0 5px 22px; }
+  .tree li::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 1px; background: var(--border); }
+  .tree li::after { content: ''; position: absolute; left: 8px; top: 14px; width: 12px; height: 1px; background: var(--border); }
+  .tree li:last-child::before { height: 14px; }
+  .tree > li::before, .tree > li::after { display: none; }
+  .tree > li { padding-left: 0; }
+  .tree-node { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 5px; font-size: 13px; font-weight: 500; }
+  .tree-node.root { background: var(--primary); color: white; }
+  .tree-node.mod { background: #EDEAFF; color: var(--primary); }
+  .tree-node.pg { background: var(--success-bg); color: var(--success); }
+  .tree-node.ft { background: var(--danger-bg); color: var(--danger); }
+
+  /* Info box */
+  .info-box { padding: 14px 18px; border-radius: 8px; font-size: 13px; margin: 12px 0; display: flex; align-items: flex-start; gap: 8px; }
+  .info-box.info { background: var(--info-bg); border-left: 3px solid var(--info); }
+  .info-box.warn { background: #FFF9E6; border-left: 3px solid var(--warning); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <h1>举手求助功能 — 方案设计</h1>
+    <div class="subtitle">录播课编程题目答疑场景 · 泳道式业务流程与产品结构</div>
+    <div class="meta">
+      <span>需求：题目作答页举手求助</span>
+      <span>版本：v1.0</span>
+      <span>日期：2026-03-28</span>
+    </div>
+  </div>
+
+  <!-- 01 整体方案 -->
+  <div class="section">
+    <div class="section-title"><div class="section-badge">01</div><h2>整体方案叙述</h2></div>
+    <div class="card">
+      <h3>💡 方案概述</h3>
+      <p style="margin-bottom:16px;">
+        在录播课的<strong>题目作答页</strong>中新增"举手求助"功能。学生遇到不会的编程题目时可一键举手，进入等待队列。班主任在后台实时查看举手队列，按需选择学生并调起已有的 IM 系统（语音/视频）发起 1v1 辅导。
+      </p>
+      <h3>🎯 核心设计决策</h3>
+      <table class="s-table">
+        <thead><tr><th style="width:18%">决策点</th><th style="width:32%">方案</th><th>理由</th></tr></thead>
+        <tbody>
+          <tr><td><strong>举手入口位置</strong></td><td>题目作答页，紧邻题目区域</td><td>在解题场景内触发，减少认知负担</td></tr>
+          <tr><td><strong>举中学生操作</strong></td><td>不限制，可继续答题/看视频</td><td>举手是辅助功能，不应阻断学习主流程</td></tr>
+          <tr><td><strong>自动停止——正确作答</strong></td><td>学生正确完成该题，自动取消举手</td><td>题目已解决，无需占用班主任精力</td></tr>
+          <tr><td><strong>队列排序</strong></td><td>按举手时间先后排序</td><td>先来先服务公平，班主任可自由选择</td></tr>
+          <tr><td><strong>1v1 辅导</strong></td><td>复用现有 IM 系统</td><td>本需求只负责"发现→排队→调起"</td></tr>
+          <tr><td><strong>队列持久化</strong></td><td>班主任不在线时队列保留</td><td>保障学生权益，举手不应丢失</td></tr>
+          <tr><td><strong>手动取消</strong></td><td>支持，需二次确认</td><td>防止误触，确认用户意图</td></tr>
+        </tbody>
+      </table>
+      <div class="info-box info" style="margin-top:20px;">
+        <span>ℹ️</span>
+        <span><strong>范围界定：</strong>本需求仅涉及"举手→排队→调起 1v1"链路。IM 系统的语音/视频通话为已有功能，不在本需求范围内。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 泳道流程图 -->
+  <div class="section">
+    <div class="section-title"><div class="section-badge">02</div><h2>业务流程图 — 泳道式</h2></div>
+
+    <!-- 图例 -->
+    <div class="legend">
+      <div class="legend-item"><div style="width:44px;height:26px;border-radius:13px;background:var(--success);"></div>起止节点</div>
+      <div class="legend-item"><div style="width:44px;height:26px;border-radius:6px;border:2px solid var(--success);"></div>操作节点</div>
+      <div class="legend-item"><div style="width:44px;height:26px;border-radius:6px;border:2px dashed var(--info);background:var(--info-bg);"></div>系统后台</div>
+      <div class="legend-item"><div style="width:26px;height:26px;border:2px solid var(--danger);background:var(--danger-bg);transform:rotate(45deg);"></div>判断节点</div>
+      <div class="legend-item"><svg width="44" height="16"><line x1="0" y1="8" x2="44" y2="8" stroke="#636E72" stroke-width="1.5"/></svg>同泳道流转</div>
+      <div class="legend-item"><svg width="44" height="16"><line x1="0" y1="8" x2="44" y2="8" stroke="#636E72" stroke-width="1.5" stroke-dasharray="4 2"/></svg>跨泳道交互</div>
+      <div class="legend-item"><svg width="44" height="16"><line x1="0" y1="8" x2="44" y2="8" stroke="#D63031" stroke-width="1.5" stroke-dasharray="6 3"/></svg>异常回退</div>
+    </div>
+
+    <!-- 泳道图 -->
+    <div class="swimlane-flowchart">
+      <div class="swimlane-header" style="grid-template-columns: 56px 1fr 1fr 1fr;">
+        <div style="border-right:1px solid var(--border);"></div>
+        <div class="swimlane-label student"><div class="role-icon">🙋</div>学生</div>
+        <div class="swimlane-label system"><div class="role-icon">⚙️</div>系统</div>
+        <div class="swimlane-label teacher"><div class="role-icon">👨‍🏫</div>班主任</div>
+      </div>
+      <div class="swimlane-body" style="grid-template-columns: 56px 1fr 1fr 1fr;">
+        <!-- 行号 -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px 8px;border-right:1px solid #F5F5F5;">
+          <div style="visibility:hidden;height:42px"></div><div style="visibility:hidden;height:42px"></div>
+          <div style="visibility:hidden;height:42px"></div><div style="visibility:hidden;height:42px"></div>
+          <div style="visibility:hidden;height:42px"></div><div style="visibility:hidden;height:42px"></div>
+          <div style="visibility:hidden;height:42px"></div><div style="visibility:hidden;height:42px"></div>
+          <div style="visibility:hidden;height:42px"></div><div style="visibility:hidden;height:42px"></div>
+          <div style="visibility:hidden;height:42px"></div><div style="visibility:hidden;height:42px"></div>
+          <div style="visibility:hidden;height:42px"></div><div style="visibility:hidden;height:42px"></div>
+          <div style="visibility:hidden;height:42px"></div><div style="visibility:hidden;height:42px"></div>
+        </div>
+
+        <!-- SVG 箭头层 -->
+        <svg class="arrows-svg" viewBox="0 0 1100 1400" preserveAspectRatio="none" style="position:absolute;top:0;left:56px;width:calc(100% - 56px);height:100%;">
+          <defs>
+            <marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#636E72"/></marker>
+            <marker id="ah-g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B894"/></marker>
+            <marker id="ah-e" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#D63031"/></marker>
+          </defs>
+
+          <!-- ① 进入→点击举手 -->
+          <line x1="340" y1="58" x2="340" y2="98" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ② 点击举手→提交 -->
+          <line x1="340" y1="143" x2="340" y2="178" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ③ 提交→加入队列 (跨) -->
+          <line x1="420" y1="200" x2="580" y2="200" class="arrow-line cross" marker-end="url(#ah)"/>
+          <!-- ④ 加入队列→判断成功 -->
+          <line x1="600" y1="222" x2="600" y2="268" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ⑤a 成功→显示等待 (回学生) -->
+          <path d="M560,295 L340,335" class="arrow-line" marker-end="url(#ah-g)"/>
+          <!-- ⑤b 失败→提示失败 -->
+          <path d="M640,295 L750,335" class="arrow-line error-line" marker-end="url(#ah-e)"/>
+          <!-- ⑤c 失败→回到点击举手 -->
+          <path d="M790,358 L790,410 Q790,420 780,420 L430,420 Q420,420 420,410 L420,125" class="arrow-line error-line" marker-end="url(#ah-e)"/>
+          <!-- ⑥ 等待→判断学生操作 -->
+          <line x1="340" y1="382" x2="340" y2="448" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ⑦a 取消举手→二次确认 -->
+          <path d="M300,475 L230,525" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ⑦b 继续答题→提交答案 -->
+          <line x1="340" y1="498" x2="340" y2="548" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ⑦c 班主任发起 (跨) -->
+          <path d="M400,475 L820,525" class="arrow-line cross" marker-end="url(#ah)"/>
+          <!-- ⑧ 提交答案→判断正确 -->
+          <line x1="340" y1="593" x2="340" y2="638" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ⑧a 正确→自动移出 (跨) -->
+          <path d="M400,665 L580,715" class="arrow-line cross" marker-end="url(#ah)"/>
+          <!-- ⑧b 错误→保持等待 -->
+          <path d="M280,665 L180,715" class="arrow-line error-line" marker-end="url(#ah-e)"/>
+          <path d="M180,738 L180,790 Q180,800 190,800 L300,800" class="arrow-line error-line" marker-end="url(#ah-e)"/>
+          <!-- ⑨ 二次确认→确认取消 (跨) -->
+          <path d="M230,570 L230,590 Q230,600 240,600 L580,630" class="arrow-line cross" marker-end="url(#ah)"/>
+          <!-- ⑩ 移出队列→通知学生 -->
+          <line x1="600" y1="760" x2="600" y2="810" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ⑪ 通知→恢复按钮 (回学生) -->
+          <path d="M560,835 L340,870" class="arrow-line" marker-end="url(#ah-g)"/>
+          <!-- ⑫ 班主任选择→调起IM -->
+          <line x1="830" y1="550" x2="830" y2="618" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ⑬ 调起IM→1v1 -->
+          <line x1="830" y1="663" x2="830" y2="718" class="arrow-line" marker-end="url(#ah)"/>
+          <!-- ⑭ 1v1→结束 -->
+          <line x1="830" y1="763" x2="830" y2="818" class="arrow-line" marker-end="url(#ah)"/>
+        </svg>
+
+        <!-- 学生列 -->
+        <div class="swimlane-col">
+          <div class="node terminal student">进入题目作答页</div>
+          <div class="node action student">点击举手按钮</div>
+          <div class="node fill student">显示举手中状态<span class="sub">排队等待中...</span></div>
+          <div class="node decision">学生操作?</div>
+          <div class="node action student" style="align-self:flex-start;margin-left:28px;">取消举手<span class="sub">点击"取消举手"</span></div>
+          <div class="node action student">继续答题<span class="sub">提交该题答案</span></div>
+          <div class="node decision" style="align-self:flex-end;margin-right:28px;">答案正确?</div>
+          <div class="node spacer"></div>
+          <div class="node action student">收到取消通知<span class="sub">Toast 提示</span></div>
+          <div class="node fill student">恢复举手按钮<span class="sub">可再次举手</span></div>
+        </div>
+
+        <!-- 系统列 -->
+        <div class="swimlane-col">
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node sys-bg">加入举手队列<span class="sub">记录学生/课程/题目信息</span></div>
+          <div class="node decision" style="align-self:flex-start;margin-left:16px;">提交成功?</div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node fill system">校验答案<span class="sub">判定正确/错误</span></div>
+          <div class="node sys-bg">移出举手队列<span class="sub">cancel_type=正确作答</span></div>
+          <div class="node action system">通知学生端<span class="sub">举手中已自动取消</span></div>
+        </div>
+
+        <!-- 班主任列 -->
+        <div class="swimlane-col">
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node spacer"></div>
+          <div class="node action teacher">选择队列学生<span class="sub">点击"发起1v1"</span></div>
+          <div class="node fill teacher">调起 IM 系统<span class="sub">语音/视频通话</span></div>
+          <div class="node terminal teacher">1v1 辅导中</div>
+          <div class="node action teacher">辅导结束</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 状态机 -->
+  <div class="section">
+    <div class="section-title"><div class="section-badge">03</div><h2>举手状态机</h2></div>
+    <div class="card" style="text-align:center; padding:40px;">
+      <svg width="680" height="220" viewBox="0 0 680 220" style="display:inline-block;">
+        <defs>
+          <marker id="ah2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#636E72"/></marker>
+          <marker id="ah2g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B894"/></marker>
+          <marker id="ah2r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#E17055"/></marker>
+        </defs>
+        <!-- 未举手 -->
+        <rect x="20" y="80" width="130" height="50" rx="25" fill="#00B894"/>
+        <text x="85" y="110" text-anchor="middle" fill="white" font-size="15" font-weight="600">未举手</text>
+        <!-- 举手中 -->
+        <rect x="270" y="80" width="130" height="50" rx="25" fill="#6C5CE7"/>
+        <text x="335" y="110" text-anchor="middle" fill="white" font-size="15" font-weight="600">举手中</text>
+        <!-- 已取消 -->
+        <rect x="520" y="80" width="130" height="50" rx="25" fill="#636E72"/>
+        <text x="585" y="110" text-anchor="middle" fill="white" font-size="15" font-weight="600">已取消</text>
+        <!-- 箭头 -->
+        <line x1="152" y1="100" x2="268" y2="100" stroke="#636E72" stroke-width="2" marker-end="url(#ah2)"/>
+        <text x="210" y="92" text-anchor="middle" font-size="11" fill="#636E72">点击举手</text>
+        <line x1="402" y1="100" x2="518" y2="100" stroke="#E17055" stroke-width="2" marker-end="url(#ah2r)"/>
+        <text x="460" y="92" text-anchor="middle" font-size="11" fill="#E17055">退出条件触发</text>
+        <!-- 回退 -->
+        <path d="M585,132 L585,170 Q585,180 575,180 L95,180 Q85,180 85,170 L85,132" stroke="#00B894" stroke-width="2" fill="none" marker-end="url(#ah2g)"/>
+        <text x="335" y="196" text-anchor="middle" font-size="11" fill="#00B894">归位（可再次举手）</text>
+        <!-- 三种退出标注 -->
+        <text x="460" y="75" text-anchor="middle" font-size="10" fill="#E17055">① 学生手动取消（二次确认）</text>
+        <text x="460" y="58" text-anchor="middle" font-size="10" fill="#E17055">② 班主任发起1v1（自动）</text>
+        <text x="460" y="41" text-anchor="middle" font-size="10" fill="#E17055">③ 正确作答（自动）</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 04 产品结构图 -->
+  <div class="section">
+    <div class="section-title"><div class="section-badge">04</div><h2>产品结构图</h2></div>
+    <div class="card">
+      <h3>📱 学生端</h3>
+      <ul class="tree">
+        <li><span class="tree-node root">录播课学习</span></li>
+        <li>
+          <span class="tree-node mod">题目作答页（核心改造页）</span>
+          <ul class="tree">
+            <li>
+              <span class="tree-node ft">举手按钮</span>
+              <ul class="tree">
+                <li><span class="tree-node ft">默认态（未举手）</span></li>
+                <li><span class="tree-node ft">举手中态（等待中）</span></li>
+              </ul>
+            </li>
+            <li><span class="tree-node ft">取消举手·二次确认弹窗</span></li>
+            <li><span class="tree-node ft">正确作答自动取消·Toast 通知</span></li>
+            <li><span class="tree-node ft">班主任发起 1v1 · 系统通知</span></li>
+          </ul>
+        </li>
+      </ul>
+      <h3 style="margin-top:28px;">🖥️ 班主任端（后台管理）</h3>
+      <ul class="tree">
+        <li><span class="tree-node root">后台管理系统</span></li>
+        <li>
+          <span class="tree-node mod">举手队列管理页（新增）</span>
+          <ul class="tree">
+            <li>
+              <span class="tree-node ft">队列列表</span>
+              <ul class="tree">
+                <li><span class="tree-node ft">学生信息（头像/姓名/班级）</span></li>
+                <li><span class="tree-node ft">课程与题目信息</span></li>
+                <li><span class="tree-node ft">举手时间 &amp; 等待时长</span></li>
+                <li><span class="tree-node ft">排序（按时间升序）</span></li>
+              </ul>
+            </li>
+            <li>
+              <span class="tree-node ft">学生详情面板</span>
+              <ul class="tree">
+                <li><span class="tree-node ft">当前题目内容</span></li>
+                <li><span class="tree-node ft">学生作答进度</span></li>
+                <li><span class="tree-node ft">发起 1v1 按钮</span></li>
+              </ul>
+            </li>
+            <li><span class="tree-node ft">空状态展示</span></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 05 场景覆盖矩阵 -->
+  <div class="section">
+    <div class="section-title"><div class="section-badge">05</div><h2>场景覆盖矩阵</h2></div>
+    <div class="card" style="padding:24px;overflow-x:auto;">
+      <table class="s-table" style="min-width:900px;">
+        <thead><tr>
+          <th style="width:4%">#</th><th style="width:15%">场景</th><th style="width:7%">类型</th>
+          <th style="width:8%">触发</th><th style="width:33%">前置条件</th><th style="width:33%">预期结果</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>正常举手</strong></td><td><span class="tag tag-core">核心</span></td><td><span class="tag tag-role-s">学生</span></td><td>在题目作答页，当前无举手中记录</td><td>按钮变举中态，进入队列，队列实时更新</td></tr>
+          <tr><td>2</td><td><strong>手动取消举手</strong></td><td><span class="tag tag-core">核心</span></td><td><span class="tag tag-role-s">学生</span></td><td>举手中，点击取消并确认</td><td>二次确认→移出队列→Toast→按钮恢复</td></tr>
+          <tr><td>3</td><td><strong>取消操作——放弃</strong></td><td><span class="tag tag-edge">边界</span></td><td><span class="tag tag-role-s">学生</span></td><td>弹窗后点击"再想想"</td><td>弹窗关闭，保持举中状态</td></tr>
+          <tr><td>4</td><td><strong>正确作答自动停止</strong></td><td><span class="tag tag-core">核心</span></td><td><span class="tag tag-role-a">系统</span></td><td>举手中，提交正确答案</td><td>自动移出队列→Toast→按钮恢复</td></tr>
+          <tr><td>5</td><td><strong>班主任发起 1v1</strong></td><td><span class="tag tag-core">核心</span></td><td><span class="tag tag-role-t">班主任</span></td><td>队列有学生，点击发起</td><td>调起 IM→学生端自动停止→移出队列</td></tr>
+          <tr><td>6</td><td><strong>举中继续答题</strong></td><td><span class="tag tag-edge">边界</span></td><td><span class="tag tag-role-s">学生</span></td><td>举中，提交错误答案</td><td>答案正常处理，举中状态不变</td></tr>
+          <tr><td>7</td><td><strong>重复举手</strong></td><td><span class="tag tag-edge">边界</span></td><td><span class="tag tag-role-s">学生</span></td><td>之前举手已结束，再次举手</td><td>正常进入举中，无间隔限制</td></tr>
+          <tr><td>8</td><td><strong>队列空状态</strong></td><td><span class="tag tag-edge">边界</span></td><td><span class="tag tag-role-t">班主任</span></td><td>队列无举手学生</td><td>显示空状态插画/文案</td></tr>
+          <tr><td>9</td><td><strong>班主任离线举手</strong></td><td><span class="tag tag-edge">边界</span></td><td><span class="tag tag-role-a">系统</span></td><td>学生举手时班主任不在线</td><td>记录保留，上线后可查看</td></tr>
+          <tr><td>10</td><td><strong>IM 调起失败</strong></td><td><span class="tag tag-err">异常</span></td><td><span class="tag tag-role-t">班主任</span></td><td>发起 1v1 时 IM 异常</td><td>提示失败，学生保持队列中</td></tr>
+          <tr><td>11</td><td><strong>并发举手</strong></td><td><span class="tag tag-edge">边界</span></td><td><span class="tag tag-role-s">学生</span></td><td>多学生同时举手</td><td>按时间戳排序，请求正常处理</td></tr>
+          <tr><td>12</td><td><strong>网络异常举手</strong></td><td><span class="tag tag-err">异常</span></td><td><span class="tag tag-role-s">学生</span></td><td>点击举手时网络异常</td><td>提示失败请重试，按钮不变</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 06 数据字段 -->
+  <div class="section">
+    <div class="section-title"><div class="section-badge">06</div><h2>关键数据字段</h2></div>
+    <div class="card">
+      <h3>📦 举手记录表 (hand_raising_record)</h3>
+      <table class="s-table">
+        <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>String</td><td>记录唯一标识</td></tr>
+          <tr><td><code>student_id</code></td><td>String</td><td>学生 ID</td></tr>
+          <tr><td><code>student_name</code></td><td>String</td><td>学生姓名（冗余，方便展示）</td></tr>
+          <tr><td><code>class_id</code></td><td>String</td><td>班级 ID</td></tr>
+          <tr><td><code>course_id / course_name</code></td><td>String</td><td>课程 ID / 名称</td></tr>
+          <tr><td><code>question_id / question_title</code></td><td>String</td><td>题目 ID / 标题</td></tr>
+          <tr><td><code>status</code></td><td>Enum</td><td>排队中 / 已取消 / 已接受</td></tr>
+          <tr><td><code>raise_time</code></td><td>DateTime</td><td>举手时间</td></tr>
+          <tr><td><code>cancel_time</code></td><td>DateTime</td><td>取消时间</td></tr>
+          <tr><td><code>cancel_type</code></td><td>Enum</td><td>手动取消 / 正确作答 / 班主任接受</td></tr>
+          <tr><td><code>accept_teacher_id</code></td><td>String</td><td>接受辅导的班主任 ID</td></tr>
+          <tr><td><code>accept_time</code></td><td>DateTime</td><td>发起 1v1 的时间</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

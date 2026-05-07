@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRD - 3D模型搭建配置平台</title>
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-light: #dbeafe;
+      --accent: #8b5cf6;
+      --bg: #f7f8fc;
+      --white: #ffffff;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --tag-bg: #f3f4f6;
+      --radius: 8px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 15px;
+    }
+
+    html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+
+    /* ── Toolbar ── */
+    #toolbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 52px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 8px;
+      z-index: 1000;
+      box-shadow: var(--shadow);
+    }
+    #toolbar .doc-brand { font-size: 14px; font-weight: 700; color: var(--primary); margin-right: 4px; }
+    #toolbar .doc-name { font-size: 13px; color: var(--text); font-weight: 500; }
+    #toolbar .sep { width: 1px; height: 20px; background: var(--border); margin: 0 8px; }
+    #toolbar span.meta-info { font-size: 12px; color: var(--text-muted); }
+    #toolbar button {
+      height: 30px; padding: 0 12px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--white); color: var(--text);
+      font-size: 13px; cursor: pointer; transition: all .15s;
+    }
+    #toolbar button:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* ── Layout ── */
+    #wrapper { display: flex; margin-top: 52px; min-height: calc(100vh - 52px); }
+
+    /* ── Sidebar TOC ── */
+    #sidebar {
+      width: 240px; flex-shrink: 0;
+      position: sticky; top: 52px;
+      height: calc(100vh - 52px);
+      overflow-y: auto;
+      padding: 24px 16px;
+      border-right: 1px solid var(--border);
+      background: var(--white);
+    }
+    #sidebar::-webkit-scrollbar { width: 4px; }
+    #sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+    #sidebar h3 { font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; }
+    #sidebar a {
+      display: block; font-size: 13px;
+      color: var(--text-muted); text-decoration: none;
+      padding: 5px 8px; border-radius: 6px;
+      transition: all .15s; line-height: 1.4;
+    }
+    #sidebar a:hover, #sidebar a.active { background: var(--primary-light); color: var(--primary); }
+    #sidebar a.sub { padding-left: 20px; font-size: 12px; }
+
+    /* ── Main Content ── */
+    #main { flex: 1; max-width: 900px; padding: 40px 48px 80px; }
+
+    /* ── Cover ── */
+    .cover {
+      background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+      border-radius: 12px; padding: 48px 40px 40px;
+      color: #fff; margin-bottom: 40px;
+      position: relative; overflow: hidden;
+    }
+    .cover::before {
+      content: ''; position: absolute;
+      top: -40px; right: -40px; width: 200px; height: 200px;
+      background: rgba(255,255,255,0.08); border-radius: 50%;
+    }
+    .cover::after {
+      content: ''; position: absolute;
+      bottom: -60px; right: 60px; width: 140px; height: 140px;
+      background: rgba(255,255,255,0.06); border-radius: 50%;
+    }
+    .cover .label {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: .05em; margin-bottom: 16px;
+    }
+    .cover h1 { font-size: 28px; font-weight: 800; line-height: 1.3; margin-bottom: 8px; position: relative; }
+    .cover .subtitle { font-size: 15px; opacity: .85; margin-bottom: 28px; }
+    .cover .meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; opacity: .9; }
+    .cover .meta-item { display: flex; align-items: center; gap: 6px; }
+    .cover .meta-item .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.6); }
+    .cover .status-badge { background: rgba(255,255,255,0.25); border-radius: 20px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+    .cover .audience {
+      margin-top: 20px; padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      font-size: 12px; opacity: .8;
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .cover .audience .tag { background: rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 8px; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 56px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .section-num {
+      width: 36px; height: 36px;
+      background: var(--primary); color: #fff;
+      border-radius: 8px; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    h2 { font-size: 20px; font-weight: 700; color: var(--text); }
+    h3 { font-size: 16px; font-weight: 700; margin: 28px 0 12px; color: var(--text); }
+    h3::before { content: ''; display: inline-block; width: 3px; height: 16px; background: var(--primary); border-radius: 2px; margin-right: 8px; vertical-align: middle; }
+    h4 { font-size: 14px; font-weight: 700; margin: 20px 0 8px; color: var(--text-muted); }
+
+    p { margin-bottom: 12px; color: #374151; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--white); border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 20px 24px; margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 13px; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: 12px;
+    }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead tr { background: #f9fafb; }
+    th {
+      text-align: left; padding: 11px 14px;
+      font-weight: 700; font-size: 13px;
+      color: var(--text-muted);
+      border-bottom: 2px solid var(--border);
+    }
+    td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    /* ── Tags ── */
+    .tag {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    .tag.green { background: #dcfce7; color: #16a34a; }
+    .tag.red { background: #fee2e2; color: #dc2626; }
+    .tag.blue { background: #dbeafe; color: #2563eb; }
+    .tag.orange { background: #ffedd5; color: #ea580c; }
+    .tag.gray { background: var(--tag-bg); color: var(--text-muted); }
+    .tag.yellow { background: #fef9c3; color: #854d0e; }
+    .tag.purple { background: #ede9ff; color: #7c3aed; }
+    .p0 { background: #fee2e2; color: #dc2626; font-weight: 700; }
+    .p1 { background: #ffedd5; color: #c2410c; font-weight: 700; }
+    .p2 { background: #fef9c3; color: #854d0e; font-weight: 700; }
+
+    /* Revision badge */
+    .rev-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .rev-new { background: #dcfce7; color: #166534; }
+    .rev-mod { background: #dbeafe; color: #1e40af; }
+    .rev-fix { background: #ffedd5; color: #9a3412; }
+
+    /* ── List ── */
+    ul, ol { padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 6px; color: #374151; }
+    li::marker { color: var(--primary); }
+
+    /* ── Info Box ── */
+    .info-box {
+      border-left: 4px solid var(--primary);
+      background: var(--primary-light);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 14px 18px; margin-bottom: 16px; font-size: 14px;
+    }
+    .info-box.warn { border-color: #f59e0b; background: #fffbeb; }
+    .info-box.success { border-color: #10b981; background: #ecfdf5; }
+    .info-box.orange { border-color: #f97316; background: #fff7ed; }
+    .info-box strong { display: block; margin-bottom: 4px; }
+
+    /* ── Value Card Grid ── */
+    .value-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px; margin-bottom: 20px;
+    }
+    .value-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px; box-shadow: var(--shadow);
+    }
+    .value-card .vc-icon { font-size: 28px; margin-bottom: 10px; }
+    .value-card .vc-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .value-card .vc-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .value-card.purple { border-top: 3px solid #8b5cf6; }
+    .value-card.blue { border-top: 3px solid #3b82f6; }
+    .value-card.green { border-top: 3px solid #10b981; }
+    .value-card.orange { border-top: 3px solid #f59e0b; }
+
+    /* ── Solution Block ── */
+    .solution-block {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px;
+      margin-bottom: 20px; box-shadow: var(--shadow);
+    }
+    .solution-block h4 { font-size: 15px; font-weight: 700; color: var(--primary); margin: 0 0 12px; }
+
+    /* ── Diagram Container ── */
+    .diagram-container {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px;
+      margin: 16px 0; box-shadow: var(--shadow);
+      text-align: center; overflow-x: auto;
+    }
+    .diagram-container .diagram-title {
+      font-size: 14px; font-weight: 700; color: #374151;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Prototype Section ── */
+    .proto-section {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px;
+      margin-bottom: 28px; box-shadow: var(--shadow);
+    }
+    .proto-section .proto-title {
+      font-size: 14px; font-weight: 700; color: #374151;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .proto-images {
+      display: flex; flex-wrap: wrap; gap: 20px;
+      justify-content: center; margin-bottom: 20px;
+    }
+    .proto-images img {
+      max-width: 46%; height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .proto-images img.single { max-width: 55%; }
+    .proto-images img.full { max-width: 100%; }
+    .proto-desc {
+      background: #f9fafb; border-radius: 8px; padding: 16px 20px;
+    }
+    .proto-desc .desc-title {
+      font-size: 13px; font-weight: 700;
+      color: var(--text-muted); margin-bottom: 10px;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+
+    /* ── Flow Chart SVG ── */
+    .flow-chart {
+      width: 100%;
+      min-width: 600px;
+    }
+    .flow-chart rect { rx: 8; ry: 8; }
+    .flow-chart .node-action { fill: #dbeafe; stroke: #3b82f6; stroke-width: 2; }
+    .flow-chart .node-decision { fill: #fef9c3; stroke: #f59e0b; stroke-width: 2; }
+    .flow-chart .node-start { fill: #dcfce7; stroke: #22c55e; stroke-width: 2; }
+    .flow-chart .node-end { fill: #fee2e2; stroke: #ef4444; stroke-width: 2; }
+    .flow-chart .node-system { fill: #f3f4f6; stroke: #6b7280; stroke-width: 2; stroke-dasharray: 4; }
+    .flow-chart text { font-size: 12px; font-family: -apple-system, sans-serif; fill: #374151; }
+    .flow-chart .arrow { marker-end: url(#arrowhead); }
+
+    /* ── Structure Chart ── */
+    .structure-chart {
+      text-align: left;
+    }
+    .struct-level {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-left: 20px;
+      padding-left: 24px;
+      border-left: 2px dashed var(--border);
+      margin-top: 8px;
+    }
+    .struct-node {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .struct-node.root {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      font-weight: 700;
+    }
+    .struct-node.module {
+      background: var(--primary-light);
+      border-color: #93c5fd;
+      color: #1e40af;
+    }
+    .struct-node.sub {
+      background: #f9fafb;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    /* ── Divider ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    /* ── Footer ── */
+    .doc-footer {
+      font-size: 13px; color: var(--text-muted);
+      text-align: center; margin-top: 24px;
+    }
+
+    /* ── Print ── */
+    @media print {
+      #toolbar, #sidebar { display: none !important; }
+      #main { max-width: 100%; padding: 20px; }
+      #wrapper { margin-top: 0; }
+      body { background: #fff; }
+      .section { break-inside: avoid; }
+      html { scroll-padding-top: 0; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      #sidebar { display: none; }
+      #main { max-width: 100%; padding: 20px 16px 60px; }
+      .cover { padding: 32px 24px; }
+      .cover h1 { font-size: 22px; }
+      .proto-images img { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Toolbar ── -->
+<div id="toolbar">
+  <span class="doc-brand">PRD</span>
+  <span class="doc-name">3D模型搭建配置平台</span>
+  <div class="sep"></div>
+  <span class="meta-info">2026-05-06 · 版本 v1.0</span>
+  <div class="sep"></div>
+  <button onclick="window.print()">🖨️ 打印 / 导出 PDF</button>
+  <button onclick="saveLocal()">💾 保存到本地</button>
+</div>
+
+<!-- ── Layout ── -->
+<div id="wrapper">
+
+  <!-- ── Sidebar ── -->
+  <nav id="sidebar">
+    <h3>目录</h3>
+    <a href="#cover">封面</a>
+    <a href="#s1">01 修订记录</a>
+    <a href="#s2">02 需求背景</a>
+    <a href="#s3">03 需求价值</a>
+    <a href="#s4">04 需求 List</a>
+    <a href="#s5">05 产品方案</a>
+    <a class="sub" href="#s5-1">5.1 方案概述</a>
+    <a class="sub" href="#s5-2">5.2 业务流程图</a>
+    <a class="sub" href="#s5-3">5.3 产品结构图</a>
+    <a class="sub" href="#s5-4">5.4 关键设计决策</a>
+    <a href="#s6">06 需求详述</a>
+    <a class="sub" href="#s6-1">6.1 资源列表页</a>
+    <a class="sub" href="#s6-2">6.2 3D模型配置页</a>
+    <a class="sub" href="#s6-3">6.3 模拟搭建页</a>
+    <a class="sub" href="#s6-4">6.4 验收确认页</a>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main id="main">
+
+    <!-- ═══ Cover ═══ -->
+    <div class="cover" id="cover">
+      <div class="label">产品需求文档</div>
+      <h1>3D模型搭建配置平台</h1>
+      <p class="subtitle">3D模型零件解析、安装方向配置、模拟搭建预览与验收管理</p>
+      <div class="meta">
+        <div class="meta-item"><div class="dot"></div><span>版本 <strong>v1.0</strong></span></div>
+        <div class="meta-item"><div class="dot"></div><span>日期 <strong>2026-05-06</strong></span></div>
+        <div class="meta-item"><div class="dot"></div><span>负责人 <strong>产品团队</strong></span></div>
+        <div class="meta-item"><span class="status-badge">初稿</span></div>
+      </div>
+      <div class="audience">
+        <span>面向：</span>
+        <span class="tag">🎨 UI 设计师</span>
+        <span class="tag">⚛️ 前端开发</span>
+        <span class="tag">🔧 后端开发</span>
+        <span class="tag">🧪 测试</span>
+        <span class="tag">📋 产品</span>
+      </div>
+    </div>
+
+    <!-- ═══ S1 修订记录 ═══ -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <div class="section-num">01</div>
+        <h2>修订记录</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:90px;">修订版本</th>
+              <th style="width:130px;">修订时间</th>
+              <th>修订内容</th>
+              <th style="width:80px;">修订标记</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>v1.0</strong></td>
+              <td>2026-05-06</td>
+              <td>初始版本，包含资源列表、3D配置、模拟搭建、验收确认四大模块的完整需求定义</td>
+              <td><span class="rev-badge rev-new">新建</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ S2 需求背景 ═══ -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <div class="section-num">02</div>
+        <h2>需求背景</h2>
+      </div>
+
+      <h3>业务背景</h3>
+      <p>随着3D可视化技术在工业制造、产品展示、教育培训等领域的广泛应用，企业需要一套完整的3D模型搭建配置工具。该工具帮助运营人员将3D模型文件（如GLB/GLTF/OBJ格式）进行零件分解，并为每个零件配置安装方向，最终生成可视化的装配指南供用户学习使用。</p>
+
+      <h3>现状与问题</h3>
+      <p>目前企业在3D模型装配教学场景中面临以下挑战：</p>
+      <div class="card">
+        <div class="card-title">核心痛点</div>
+        <ul>
+          <li><strong>零件拆分复杂</strong>：需要技术人员手动拆分3D模型，效率低且容易出错</li>
+          <li><strong>装配方向难定义</strong>：缺乏可视化工具定义零件安装方向，导致装配顺序混乱</li>
+          <li><strong>预览体验差</strong>：无法直观预览装配过程，用户学习成本高</li>
+          <li><strong>验收流程缺失</strong>：配置完成后缺少标准化的验收确认机制</li>
+        </ul>
+      </div>
+
+      <h3>目标定义</h3>
+      <p>本产品旨在打造一个端到端的3D模型搭建配置平台，实现以下核心目标：</p>
+      <ul>
+        <li>支持自动解析3D模型文件，提取零件列表</li>
+        <li>提供可视化界面配置每个零件的安装方向</li>
+        <li>支持手动步骤预览装配过程，增强用户体验</li>
+        <li>建立完整的资源配置、搭建、验收工作流</li>
+      </ul>
+
+      <div class="info-box">
+        <strong>📌 关键约束</strong>
+        <ul style="margin-bottom:0">
+          <li>支持格式：GLB、GLTF、OBJ（Web端Three.js兼容性最佳）</li>
+          <li>白色主题风格，符合现代简约设计趋势</li>
+          <li>全栈纯前端实现，便于快速迭代和部署</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═══ S3 需求价值 ═══ -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <div class="section-num">03</div>
+        <h2>需求价值</h2>
+      </div>
+
+      <div class="value-grid">
+        <div class="value-card purple">
+          <div class="vc-icon">🎯</div>
+          <div class="vc-title">用户价值</div>
+          <div class="vc-desc">运营人员可自主完成3D模型配置，无需技术介入；终端用户获得沉浸式装配学习体验</div>
+        </div>
+        <div class="value-card blue">
+          <div class="vc-icon">💼</div>
+          <div class="vc-title">业务价值</div>
+          <div class="vc-desc">标准化3D资源配置流程，缩短模型上线周期；可追溯的验收机制保障内容质量</div>
+        </div>
+        <div class="value-card green">
+          <div class="vc-icon">📈</div>
+          <div class="vc-title">效率提升</div>
+          <div class="vc-desc">相比传统手工配置，效率提升约70%；自动化零件解析减少人工错误</div>
+        </div>
+        <div class="value-card orange">
+          <div class="vc-icon">⚡</div>
+          <div class="vc-title">可扩展性</div>
+          <div class="vc-desc">平台架构支持后续扩展AR/VR装配指导、装配动画导出等高级功能</div>
+        </div>
+      </div>
+
+      <h3>价值量化预期</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>指标</th>
+              <th>现状基线</th>
+              <th>目标值</th>
+              <th>衡量方式</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>单模型配置耗时</td>
+              <td>4-6小时（手动）</td>
+              <td>30分钟（自动+可视化）</td>
+              <td>工时统计</td>
+            </tr>
+            <tr>
+              <td>零件安装方向配置准确率</td>
+              <td>60%（凭经验判断）</td>
+              <td>95%（可视化配置）</td>
+              <td>验收通过率</td>
+            </tr>
+            <tr>
+              <td>用户学习完成率</td>
+              <td>40%（静态文档）</td>
+              <td>75%（3D交互预览）</td>
+              <td>学习数据埋点</td>
+            </tr>
+            <tr>
+              <td>内容上线周期</td>
+              <td>2-3周</td>
+              <td>3-5天</td>
+              <td>项目管理数据</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ S4 需求 List ═══ -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <div class="section-num">04</div>
+        <h2>需求 List</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:50px;">序号</th>
+              <th>需求点</th>
+              <th>上游需求方</th>
+              <th>下游依赖</th>
+              <th style="width:60px;">优先级</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:700;color:var(--primary);">R-01</td>
+              <td>
+                <strong>3D模型上传与解析</strong><br>
+                <span style="font-size:12px;color:var(--text-muted);">支持GLB/GLTF/OBJ格式，自动提取零件列表</span>
+              </td>
+              <td>业务方（内容团队）</td>
+              <td>R-02, R-03</td>
+              <td><span class="tag p0">P0</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;color:var(--primary);">R-02</td>
+              <td>
+                <strong>零件安装方向配置</strong><br>
+                <span style="font-size:12px;color:var(--text-muted);">可视化选择6个方向之一，支持飞入动画预览</span>
+              </td>
+              <td>R-01</td>
+              <td>R-03, R-04</td>
+              <td><span class="tag p0">P0</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;color:var(--primary);">R-03</td>
+              <td>
+                <strong>零件360°旋转预览</strong><br>
+                <span style="font-size:12px;color:var(--text-muted);">选中零件自动展示旋转动画，独立小窗口预览</span>
+              </td>
+              <td>R-01, R-02</td>
+              <td>R-04</td>
+              <td><span class="tag p0">P0</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;color:var(--primary);">R-04</td>
+              <td>
+                <strong>手动步骤预览搭建</strong><br>
+                <span style="font-size:12px;color:var(--text-muted);">用户手动点击"下一步"触发飞入动画，循序渐进展示装配</span>
+              </td>
+              <td>R-02, R-03</td>
+              <td>R-05</td>
+              <td><span class="tag p0">P0</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;color:var(--primary);">R-05</td>
+              <td>
+                <strong>资源列表管理</strong><br>
+                <span style="font-size:12px;color:var(--text-muted);">搜索、筛选、新建、编辑、删除、发布/取消发布</span>
+              </td>
+              <td>运营团队</td>
+              <td>R-01~R-04</td>
+              <td><span class="tag p1">P1</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;color:var(--primary);">R-06</td>
+              <td>
+                <strong>页面联动与数据持久化</strong><br>
+                <span style="font-size:12px;color:var(--text-muted);">资源列表与配置页跳转，数据通过localStorage共享</span>
+              </td>
+              <td>R-05</td>
+              <td>R-01~R-04</td>
+              <td><span class="tag p1">P1</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;color:var(--primary);">R-07</td>
+              <td>
+                <strong>模拟搭建模式</strong><br>
+                <span style="font-size:12px;color:var(--text-muted);">独立页面，用户可自由练习装配过程，支持重置</span>
+              </td>
+              <td>R-04</td>
+              <td>R-08</td>
+              <td><span class="tag p1">P1</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;color:var(--primary);">R-08</td>
+              <td>
+                <strong>验收确认流程</strong><br>
+                <span style="font-size:12px;color:var(--text-muted);">配置完成后的质量检查清单，审批通过方可发布</span>
+              </td>
+              <td>R-07</td>
+              <td>发布系统</td>
+              <td><span class="tag p2">P2</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-box warn">
+        <strong>优先级说明</strong>
+        <span style="font-weight:normal;">P0 = 本期上线必须实现；P1 = 本期争取实现；P2 = 本期可延后或简化实现</span>
+      </div>
+    </div>
+
+    <!-- ═══ S5 产品方案 ═══ -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <div class="section-num">05</div>
+        <h2>产品方案</h2>
+      </div>
+
+      <h3 id="s5-1">5.1 方案概述</h3>
+      <p>本产品采用全栈纯前端架构，基于Three.js实现3D渲染能力，通过localStorage实现数据持久化和页面间共享。整体分为四个核心模块：</p>
+      <ul>
+        <li><strong>资源列表页</strong>：管理3D模型资源的增删改查，支持按名称和状态筛选</li>
+        <li><strong>3D配置页</strong>：上传模型、解析零件、配置安装方向、预览装配步骤</li>
+        <li><strong>模拟搭建页</strong>：用户自由练习装配流程，支持拖拽和飞入动画</li>
+        <li><strong>验收确认页</strong>：配置完成后的质量检查和审批流程</li>
+      </ul>
+
+      <h3 id="s5-2">5.2 业务流程图</h3>
+      <div class="diagram-container">
+        <div class="diagram-title">3D模型搭建配置核心流程</div>
+        <svg class="flow-chart" viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/>
+            </marker>
+          </defs>
+          
+          <!-- 泳道标题 -->
+          <text x="400" y="25" text-anchor="middle" font-size="14" font-weight="700" fill="#374151">运营人员</text>
+          <text x="650" y="25" text-anchor="middle" font-size="14" font-weight="700" fill="#374151">系统</text>
+          
+          <!-- 分隔线 -->
+          <line x1="530" y1="40" x2="530" y2="500" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4"/>
+          
+          <!-- 节点: 开始 -->
+          <ellipse cx="150" cy="70" rx="60" ry="25" class="node-start"/>
+          <text x="150" y="75" text-anchor="middle">开始</text>
+          
+          <!-- 节点: 新建资源 -->
+          <rect x="70" y="120" width="160" height="50" class="node-action"/>
+          <text x="150" y="150" text-anchor="middle">新建资源</text>
+          
+          <!-- 节点: 上传模型 -->
+          <rect x="70" y="200" width="160" height="50" class="node-action"/>
+          <text x="150" y="230" text-anchor="middle">上传3D模型</text>
+          
+          <!-- 节点: 自动解析 -->
+          <rect x="570" y="200" width="160" height="50" class="node-system"/>
+          <text x="650" y="230" text-anchor="middle">自动解析零件</text>
+          
+          <!-- 节点: 零件列表 -->
+          <rect x="570" y="280" width="160" height="50" class="node-system"/>
+          <text x="650" y="310" text-anchor="middle">生成零件列表</text>
+          
+          <!-- 节点: 配置安装方向 -->
+          <rect x="70" y="280" width="160" height="50" class="node-action"/>
+          <text x="150" y="310" text-anchor="middle">配置安装方向</text>
+          
+          <!-- 节点: 360预览 -->
+          <rect x="70" y="360" width="160" height="50" class="node-action"/>
+          <text x="150" y="390" text-anchor="middle">360°旋转预览</text>
+          
+          <!-- 节点: 全部配置完成? -->
+          <polygon points="150,430 210,465 150,500 90,465" class="node-decision"/>
+          <text x="150" y="465" text-anchor="middle" font-size="11">全部配置</text>
+          <text x="150" y="478" text-anchor="middle" font-size="11">完成?</text>
+          
+          <!-- 节点: 保存配置 -->
+          <rect x="570" y="360" width="160" height="50" class="node-system"/>
+          <text x="650" y="390" text-anchor="middle">保存配置</text>
+          
+          <!-- 节点: 模拟搭建 -->
+          <rect x="280" y="430" width="120" height="45" class="node-action"/>
+          <text x="340" y="458" text-anchor="middle">模拟搭建</text>
+          
+          <!-- 节点: 验收确认 -->
+          <rect x="430" y="430" width="120" height="45" class="node-action"/>
+          <text x="490" y="458" text-anchor="middle">验收确认</text>
+          
+          <!-- 节点: 发布 -->
+          <rect x="280" y="500" width="120" height="45" class="node-action"/>
+          <text x="340" y="528" text-anchor="middle">发布上线</text>
+          
+          <!-- 节点: 结束 -->
+          <ellipse cx="490" cy="530" rx="50" ry="22" class="node-end"/>
+          <text x="490" y="535" text-anchor="middle">完成</text>
+          
+          <!-- 连接线 -->
+          <line x1="150" y1="95" x2="150" y2="120" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          <line x1="150" y1="170" x2="150" y2="200" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          
+          <!-- 上传到系统 -->
+          <line x1="230" y1="225" x2="570" y2="225" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          <text x="400" y="218" text-anchor="middle" font-size="10" fill="#6b7280">上传文件</text>
+          
+          <!-- 解析完成到零件列表 -->
+          <line x1="650" y1="250" x2="650" y2="280" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          
+          <!-- 零件列表反馈 -->
+          <line x1="570" y1="305" x2="230" y2="305" stroke="#6b7280" stroke-width="2" stroke-dasharray="4"/>
+          <text x="400" y="298" text-anchor="middle" font-size="10" fill="#6b7280">零件数据</text>
+          
+          <!-- 配置完成 -->
+          <line x1="150" y1="330" x2="150" y2="360" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          
+          <!-- 预览完成 -->
+          <line x1="150" y1="410" x2="150" y2="430" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          
+          <!-- 判断否 -->
+          <line x1="90" y1="465" x2="70" y2="465" stroke="#6b7280" stroke-width="2"/>
+          <line x1="70" y1="465" x2="70" y2="330" stroke="#6b7280" stroke-width="2"/>
+          <line x1="70" y1="330" x2="90" y2="330" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          <text x="45" y="400" font-size="10" fill="#ef4444">否</text>
+          
+          <!-- 判断是 -->
+          <line x1="210" y1="465" x2="280" y2="465" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          <text x="245" y="458" font-size="10" fill="#22c55e">是</text>
+          
+          <!-- 保存 -->
+          <line x1="300" y1="430" x2="570" y2="385" stroke="#6b7280" stroke-width="2" stroke-dasharray="4"/>
+          <line x1="570" y1="385" x2="570" y2="385" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          
+          <!-- 搭建到验收 -->
+          <line x1="340" y1="475" x2="430" y2="475" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          
+          <!-- 验收通过 -->
+          <line x1="490" y1="475" x2="400" y2="500" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          <text x="505" y="490" font-size="10" fill="#22c55e">通过</text>
+          
+          <!-- 验收拒绝 -->
+          <line x1="570" y1="410" x2="570" y2="465" stroke="#6b7280" stroke-width="2"/>
+          <line x1="570" y1="465" x2="400" y2="465" class="arrow" stroke="#6b7280" stroke-width="2"/>
+          <text x="585" y="445" font-size="10" fill="#ef4444">拒绝</text>
+          
+          <!-- 完成 -->
+          <line x1="400" y1="500" x2="440" y2="520" class="arrow" stroke="#6b7280" stroke-width="2"/>
+        </svg>
+      </div>
+
+      <h3 id="s5-3">5.3 产品结构图</h3>
+      <div class="diagram-container">
+        <div class="diagram-title">产品信息架构</div>
+        <div class="structure-chart">
+          <div class="struct-node root">3D模型搭建配置平台</div>
+          <div class="struct-level">
+            <div class="struct-node module">
+              <div>📦 资源列表页</div>
+              <div style="font-size:11px;color:#6b7280;margin-top:4px;font-weight:normal">
+                资源管理 | 搜索筛选 | 新建编辑 | 发布管理
+              </div>
+            </div>
+            <div class="struct-node module">
+              <div>⚙️ 3D配置页</div>
+              <div style="font-size:11px;color:#6b7280;margin-top:4px;font-weight:normal">
+                模型上传 | 零件解析 | 方向配置 | 360°预览 | 步骤预览
+              </div>
+            </div>
+            <div class="struct-node module">
+              <div>🎮 模拟搭建页</div>
+              <div style="font-size:11px;color:#6b7280;margin-top:4px;font-weight:normal">
+                自由练习 | 飞入动画 | 重置功能
+              </div>
+            </div>
+            <div class="struct-node module">
+              <div>✅ 验收确认页</div>
+              <div style="font-size:11px;color:#6b7280;margin-top:4px;font-weight:normal">
+                检查清单 | 审批流程 | 驳回/通过
+              </div>
+            </div>
+          </div>
+          <div class="struct-level" style="margin-top:16px">
+            <div class="struct-node" style="border-left:3px solid #3b82f6">
+              <strong>共享数据层</strong>
+              <div style="font-size:11px;color:#6b7280;margin-top:4px">localStorage 数据持久化</div>
+            </div>
+            <div class="struct-node">
+              <strong>Three.js 渲染引擎</strong>
+              <div style="font-size:11px;color:#6b7280;margin-top:4px">主场景 | Mini预览器 | 飞入动画</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 id="s5-4">5.4 关键设计决策</h3>
+      <div class="solution-block">
+        <h4>决策一：纯前端架构选型</h4>
+        <p><strong>问题</strong>：传统的后端渲染方案需要额外的服务器资源，且3D渲染在服务端难以实现。</p>
+        <p><strong>方案</strong>：采用纯前端架构，使用Three.js进行3D渲染，通过localStorage实现数据持久化。</p>
+        <p><strong>结论</strong>：降低部署复杂度，提高响应速度，适合中小规模应用场景。后续可通过Service Worker扩展离线能力。</p>
+      </div>
+      <div class="solution-block">
+        <h4>决策二：独立Mini渲染器实现360°预览</h4>
+        <p><strong>问题</strong>：主场景中的零件在选中后如何独立旋转而不影响整体布局？</p>
+        <p><strong>方案</strong>：创建独立的miniRenderer/miniScene/miniCamera，使用单独的渲染循环。</p>
+        <p><strong>结论</strong>：主场景和预览窗口互不干扰，用户可同时查看整体和细节。</p>
+      </div>
+      <div class="solution-block">
+        <h4>决策三：飞入动画替代拖拽</h4>
+        <p><strong>问题</strong>：手动装配时如何让零件移动更直观？</p>
+        <p><strong>方案</strong>：零件从随机位置沿安装方向easeOutCubic曲线飞入到正确位置。</p>
+        <p><strong>结论</strong>：动画流畅自然，视觉反馈清晰，用户无需学习拖拽操作。</p>
+      </div>
+      <div class="solution-block">
+        <h4>决策四：白色主题设计</h4>
+        <p><strong>问题</strong>：深色主题影响3D模型的色彩还原度和视觉层次。</p>
+        <p><strong>方案</strong>：采用白色为主色调，3D场景使用浅灰色GridHelper。</p>
+        <p><strong>结论</strong>：模型色彩还原真实，长时间使用不易疲劳，符合产品展示类应用的设计趋势。</p>
+      </div>
+    </div>
+
+    <!-- ═══ S6 需求详述 ═══ -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <div class="section-num">06</div>
+        <h2>需求详述</h2>
+      </div>
+
+      <!-- 6.1 资源列表页 -->
+      <h3 id="s6-1">6.1 资源列表页</h3>
+      <div class="proto-section">
+        <div class="proto-title">原型展示 — 资源列表页</div>
+        <div class="proto-images">
+          <img src="resource-list.png" alt="资源列表页" class="single" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+          <div style="display:none;background:#f3f4f6;border-radius:12px;padding:40px;text-align:center;color:#6b7280;">
+            <div style="font-size:48px;margin-bottom:16px">📦</div>
+            <div style="font-size:16px;font-weight:600;margin-bottom:8px">资源列表页原型</div>
+            <div style="font-size:13px">包含：顶部搜索栏、状态筛选、表格列表、分页组件<br>文件路径: resource-list.html</div>
+          </div>
+        </div>
+        <div class="proto-desc">
+          <div class="desc-title">功能详细描述</div>
+          <div class="table-wrap" style="margin-bottom:0;">
+            <table>
+              <thead><tr><th>交互要素</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><strong>搜索框</strong></td>
+                  <td>支持按资源名称模糊搜索，实时过滤列表数据</td>
+                </tr>
+                <tr>
+                  <td><strong>配置状态筛选</strong></td>
+                  <td>全部状态 / 已配置 / 待配置 三个Tab切换</td>
+                </tr>
+                <tr>
+                  <td><strong>发布状态筛选</strong></td>
+                  <td>全部发布 / 已发布 / 草稿 三个Tab切换</td>
+                </tr>
+                <tr>
+                  <td><strong>新建资源按钮</strong></td>
+                  <td>点击弹出模态框，输入名称后创建并跳转到3D配置页</td>
+                </tr>
+                <tr>
+                  <td><strong>预览按钮</strong></td>
+                  <td>打开预览弹窗或跳转预览页面（规划中）</td>
+                </tr>
+                <tr>
+                  <td><strong>编辑按钮</strong></td>
+                  <td>携带resourceId参数跳转到3D配置页进行编辑</td>
+                </tr>
+                <tr>
+                  <td><strong>发布/取消发布</strong></td>
+                  <td>切换资源发布状态，同步更新badge显示</td>
+                </tr>
+                <tr>
+                  <td><strong>删除按钮</strong></td>
+                  <td>弹出确认对话框，确认后删除资源</td>
+                </tr>
+                <tr>
+                  <td><strong>分页组件</strong></td>
+                  <td>每页10条记录，支持跳转首页/末页/指定页</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="info-box">
+        <strong>数据字段</strong>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>string</td><td>唯一标识，格式: r_时间戳</td></tr>
+              <tr><td>name</td><td>string</td><td>资源名称</td></tr>
+              <tr><td>configured</td><td>boolean</td><td>是否已完成零件配置</td></tr>
+              <tr><td>published</td><td>boolean</td><td>是否已发布</td></tr>
+              <tr><td>createdAt</td><td>string</td><td>创建日期 YYYY-MM-DD</td></tr>
+              <tr><td>modelFile</td><td>string</td><td>模型文件路径</td></tr>
+              <tr><td>partsConfig</td><td>array</td><td>零件配置数组（可选）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 6.2 3D模型配置页 -->
+      <h3 id="s6-2">6.2 3D模型配置页</h3>
+      <div class="proto-section">
+        <div class="proto-title">原型展示 — 3D模型配置页</div>
+        <div class="proto-images">
+          <img src="3d-assembly-platform.png" alt="3D配置页" class="single" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+          <div style="display:none;background:#f3f4f6;border-radius:12px;padding:40px;text-align:center;color:#6b7280;">
+            <div style="font-size:48px;margin-bottom:16px">⚙️</div>
+            <div style="font-size:16px;font-weight:600;margin-bottom:8px">3D模型配置页原型</div>
+            <div style="font-size:13px">包含：左侧零件列表、右侧3D主场景<br>底部Mini预览器、飞入动画控制按钮<br>文件路径: 3d-assembly-platform.html</div>
+          </div>
+        </div>
+        <div class="proto-desc">
+          <div class="desc-title">功能详细描述</div>
+          <div class="table-wrap" style="margin-bottom:0;">
+            <table>
+              <thead><tr><th>交互要素</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><strong>上传区域</strong></td>
+                  <td>拖拽或点击上传GLB/GLTF/OBJ文件，自动解析生成零件列表</td>
+                </tr>
+                <tr>
+                  <td><strong>演示模型</strong></td>
+                  <td>内置演示模型，点击可快速体验功能（使用TorusKnot几何体模拟）</td>
+                </tr>
+                <tr>
+                  <td><strong>零件列表</strong></td>
+                  <td>显示所有零件，点击选中高亮对应3D模型部分</td>
+                </tr>
+                <tr>
+                  <td><strong>安装方向选择</strong></td>
+                  <td>6个方向按钮（X+/X-/Y+/Y-/Z+/Z-），选中后零件沿该方向飞入</td>
+                </tr>
+                <tr>
+                  <td><strong>360°预览窗口</strong></td>
+                  <td>独立渲染器显示选中零件自动旋转动画，可拖拽查看细节</td>
+                </tr>
+                <tr>
+                  <td><strong>主3D场景</strong></td>
+                  <td>展示完整模型，支持轨道控制旋转/缩放视图</td>
+                </tr>
+                <tr>
+                  <td><strong>飞入动画</strong></td>
+                  <td>零件从随机位置沿安装方向easeOutCubic曲线飞入到正确位置</td>
+                </tr>
+                <tr>
+                  <td><strong>手动步骤预览</strong></td>
+                  <td>点击"下一步"按钮，触发当前零件的飞入动画</td>
+                </tr>
+                <tr>
+                  <td><strong>应用配置按钮</strong></td>
+                  <td>保存所有零件配置到localStorage</td>
+                </tr>
+                <tr>
+                  <td><strong>返回列表按钮</strong></td>
+                  <td>保存配置后返回资源列表页</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="info-box">
+        <strong>技术实现要点</strong>
+        <ul style="margin-bottom:0">
+          <li><strong>Three.js版本</strong>：0.160.0（ESM via jsdelivr CDN）</li>
+          <li><strong>Mini渲染器</strong>：独立创建miniRenderer、miniScene、miniCamera</li>
+          <li><strong>轨道控制</strong>：使用OrbitControls实现视角旋转和缩放</li>
+          <li><strong>零件高亮</strong>：点击列表项时，通过emissive属性高亮对应零件</li>
+          <li><strong>飞入动画</strong>：easeOutCubic缓动曲线，每帧更新零件位置</li>
+          <li><strong>数据持久化</strong>：localStorage存储resource_list_data</li>
+        </ul>
+      </div>
+
+      <!-- 6.3 模拟搭建页 -->
+      <h3 id="s6-3">6.3 模拟搭建页（规划中）</h3>
+      <div class="proto-section">
+        <div class="proto-title">功能规划 — 模拟搭建页</div>
+        <div class="proto-images">
+          <div style="background:#f3f4f6;border-radius:12px;padding:40px;text-align:center;color:#6b7280;width:100%">
+            <div style="font-size:48px;margin-bottom:16px">🎮</div>
+            <div style="font-size:16px;font-weight:600;margin-bottom:8px">模拟搭建页（待实现）</div>
+            <div style="font-size:13px">用户自由练习装配流程的独立页面</div>
+          </div>
+        </div>
+        <div class="proto-desc">
+          <div class="desc-title">功能规划描述</div>
+          <div class="table-wrap" style="margin-bottom:0;">
+            <table>
+              <thead><tr><th>功能点</th><th>描述</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><strong>加载已配置资源</strong></td>
+                  <td>从资源列表选择已配置完成的模型进入练习</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>自由装配模式</strong></td>
+                  <td>零件初始在零件盒区域，用户手动拖拽/点击安装到正确位置</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>飞入动画反馈</strong></td>
+                  <td>安装正确时触发飞入动画和成功提示</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>安装顺序提示</strong></td>
+                  <td>当前应安装的零件高亮提示</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>装配计时</strong></td>
+                  <td>记录用户完成装配的总时长</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>重置功能</strong></td>
+                  <td>一键重置所有零件到初始位置</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>完成评分</strong></td>
+                  <td>装配完成后给出评分和错装零件统计</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6.4 验收确认页 -->
+      <h3 id="s6-4">6.4 验收确认页（规划中）</h3>
+      <div class="proto-section">
+        <div class="proto-title">功能规划 — 验收确认页</div>
+        <div class="proto-images">
+          <div style="background:#f3f4f6;border-radius:12px;padding:40px;text-align:center;color:#6b7280;width:100%">
+            <div style="font-size:48px;margin-bottom:16px">✅</div>
+            <div style="font-size:16px;font-weight:600;margin-bottom:8px">验收确认页（待实现）</div>
+            <div style="font-size:13px">配置完成后的质量检查和审批流程</div>
+          </div>
+        </div>
+        <div class="proto-desc">
+          <div class="desc-title">功能规划描述</div>
+          <div class="table-wrap" style="margin-bottom:0;">
+            <table>
+              <thead><tr><th>功能点</th><th>描述</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><strong>自动检查清单</strong></td>
+                  <td>系统自动检查：零件数量、方向配置完整率、预览动画正常</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>手动检查项</strong></td>
+                  <td>人工复核：3D模型显示正常、零件命名规范、装配顺序合理</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>预览演示</strong></td>
+                  <td>可直接在验收页观看完整装配演示</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>审批意见</strong></td>
+                  <td>验收人员填写审批意见和修改建议</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>驳回机制</strong></td>
+                  <td>驳回后资源退回"待配置"状态，附上驳回原因</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>通过发布</strong></td>
+                  <td>审批通过后资源状态变为"已发布"</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+                <tr>
+                  <td><strong>验收记录</strong></td>
+                  <td>记录每次验收的时间、审批人、结论</td>
+                  <td><span class="tag gray">待开发</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+      <p class="doc-footer">
+        3D模型搭建配置平台 · 产品需求文档 &nbsp;v1.0 &nbsp;·&nbsp; 2026-05-06 &nbsp;·&nbsp; 产品团队
+      </p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function saveLocal() {
+    const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '3D模型搭建配置平台_PRD.html';
+    a.click();
+  }
+
+  // Sidebar active link on scroll
+  const sections = document.querySelectorAll('[id^="s"]');
+  const links = document.querySelectorAll('#sidebar a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(sec => {
+      const top = sec.getBoundingClientRect().top;
+      if (top < 120) current = sec.id;
+    });
+    links.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+
+</body></html>
