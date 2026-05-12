@@ -326,8 +326,7 @@
   <!-- Right Panel: Properties -->
   <aside class="right-panel">
     <div class="panel-tabs">
-      <div class="tab active" id="tabProps" onclick="switchTab('props')">零件属性</div>
-      <div class="tab" id="tabSteps" onclick="switchTab('steps')">装配步骤</div>
+      <div class="tab active" id="tabProps" style="cursor:default">零件属性</div>
     </div>
 
     <!-- Props Tab -->
@@ -354,33 +353,15 @@
           <div class="xyz-grid">
             <div class="xyz-group">
               <span class="xyz-label x-label">X</span>
-              <input class="xyz-input x-input" id="posX" type="number" step="0.1" onchange="updatePosition()">
+              <div class="xyz-input x-input" id="posX" style="background:var(--bg3);color:var(--text2);cursor:default;display:flex;align-items:center;justify-content:center;border:1px solid var(--border)">—</div>
             </div>
             <div class="xyz-group">
               <span class="xyz-label y-label">Y</span>
-              <input class="xyz-input y-input" id="posY" type="number" step="0.1" onchange="updatePosition()">
+              <div class="xyz-input y-input" id="posY" style="background:var(--bg3);color:var(--text2);cursor:default;display:flex;align-items:center;justify-content:center;border:1px solid var(--border)">—</div>
             </div>
             <div class="xyz-group">
               <span class="xyz-label z-label">Z</span>
-              <input class="xyz-input z-input" id="posZ" type="number" step="0.1" onchange="updatePosition()">
-            </div>
-          </div>
-        </div>
-
-        <div class="prop-section">
-          <div class="prop-title">安装旋转（欧拉角 deg）</div>
-          <div class="xyz-grid">
-            <div class="xyz-group">
-              <span class="xyz-label x-label">RX</span>
-              <input class="xyz-input x-input" id="rotX" type="number" step="1" onchange="updateRotation()">
-            </div>
-            <div class="xyz-group">
-              <span class="xyz-label y-label">RY</span>
-              <input class="xyz-input y-input" id="rotY" type="number" step="1" onchange="updateRotation()">
-            </div>
-            <div class="xyz-group">
-              <span class="xyz-label z-label">RZ</span>
-              <input class="xyz-input z-input" id="rotZ" type="number" step="1" onchange="updateRotation()">
+              <div class="xyz-input z-input" id="posZ" style="background:var(--bg3);color:var(--text2);cursor:default;display:flex;align-items:center;justify-content:center;border:1px solid var(--border)">—</div>
             </div>
           </div>
         </div>
@@ -431,7 +412,7 @@
           </div>
           <div class="prop-row">
             <span class="prop-label">操作说明</span>
-            <input class="prop-input" id="propNote" type="text" placeholder="可选备注..." onchange="updateNote()">
+            <input class="prop-input" id="propNote" type="text" placeholder="可选备注...">
           </div>
         </div>
 
@@ -470,17 +451,6 @@
       </div>
     </div>
 
-    <!-- Steps Tab -->
-    <div class="panel-content" id="panelSteps" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <span style="font-size:12px;color:var(--text2)">装配步骤顺序</span>
-        <button class="btn btn-primary" style="padding:5px 10px;font-size:12px" onclick="autoSortSteps()">自动排序</button>
-      </div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:12px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
-        点击下方步骤可跳转到对应预览，零件会从安装方向飞入到位
-      </div>
-      <div id="stepsList"></div>
-    </div>
   </aside>
 </div>
 
@@ -1092,7 +1062,6 @@ function buildDemoModel() {
       document.getElementById('btnExport').disabled = false;
       showViewport();
       renderPartList();
-      renderSteps();
       document.getElementById('previewBar').style.display = '';
     }, 400);
   }, 600);
@@ -1229,7 +1198,6 @@ function finishLoad(filename) {
     document.getElementById('btnExport').disabled = false;
     showViewport();
     renderPartList();
-    renderSteps();
     document.getElementById('previewBar').style.display = '';
     // 保存零件原始位置
     saveOriginalPositions();
@@ -1349,12 +1317,9 @@ function showPropEditor(part) {
 
   document.getElementById('propName').value = part.name;
   document.getElementById('propOrder').textContent = state.parts.indexOf(part) + 1;
-  document.getElementById('posX').value = part.position.x;
-  document.getElementById('posY').value = part.position.y;
-  document.getElementById('posZ').value = part.position.z;
-  document.getElementById('rotX').value = part.rotation.x;
-  document.getElementById('rotY').value = part.rotation.y;
-  document.getElementById('rotZ').value = part.rotation.z;
+  document.getElementById('posX').textContent = part.position.x;
+  document.getElementById('posY').textContent = part.position.y;
+  document.getElementById('posZ').textContent = part.position.z;
   document.getElementById('propStep').value = part.stepOrder;
   document.getElementById('propNote').value = part.note || '';
   document.getElementById('customDirInput').value = part.installDir || '';
@@ -1391,45 +1356,10 @@ window.applyCustomDir = function() {
 };
 
 // ---- Property updates ----
-window.updatePosition = function() {
-  const part = state.parts.find(p => p.id === state.selectedPartId);
-  if (!part) return;
-  part.position.x = parseFloat(document.getElementById('posX').value) || 0;
-  part.position.y = parseFloat(document.getElementById('posY').value) || 0;
-  part.position.z = parseFloat(document.getElementById('posZ').value) || 0;
-  if (part.mesh) {
-    part.mesh.position.set(part.position.x, part.position.y, part.position.z);
-    showDirectionArrow(part);
-  }
-};
-
-window.updateRotation = function() {
-  const part = state.parts.find(p => p.id === state.selectedPartId);
-  if (!part) return;
-  part.rotation.x = parseFloat(document.getElementById('rotX').value) || 0;
-  part.rotation.y = parseFloat(document.getElementById('rotY').value) || 0;
-  part.rotation.z = parseFloat(document.getElementById('rotZ').value) || 0;
-  if (part.mesh) {
-    part.mesh.rotation.set(
-      THREE.MathUtils.degToRad(part.rotation.x),
-      THREE.MathUtils.degToRad(part.rotation.y),
-      THREE.MathUtils.degToRad(part.rotation.z)
-    );
-  }
-};
-
 window.updateStep = function() {
   const part = state.parts.find(p => p.id === state.selectedPartId);
   if (!part) return;
   part.stepOrder = parseInt(document.getElementById('propStep').value) || 1;
-  renderSteps();
-};
-
-window.updateNote = function() {
-  const part = state.parts.find(p => p.id === state.selectedPartId);
-  if (!part) return;
-  part.note = document.getElementById('propNote').value;
-  renderSteps();
 };
 
 // ---- Apply config ----
@@ -1437,35 +1367,12 @@ window.applyPartConfig = function() {
   const part = state.parts.find(p => p.id === state.selectedPartId);
   if (!part) return;
   part.name = document.getElementById('propName').value || part.name;
+  part.note = document.getElementById('propNote').value;
   part.configured = !!part.installDir;
   renderPartList();
-  renderSteps();
   showToast('配置已保存');
 };
 
-// ---- Steps panel ----
-window.renderSteps = function() {
-  const sorted = [...state.parts].sort((a,b) => a.stepOrder - b.stepOrder);
-  const listEl = document.getElementById('stepsList');
-  if (sorted.length === 0) { listEl.innerHTML = '<div class="empty-state" style="padding:20px 0">暂无步骤</div>'; return; }
-
-  const dirLabels = {'+X':'从+X方向','-X':'从-X方向','+Y':'从上方','-Y':'从下方','+Z':'从前方','-Z':'从后方'};
-  listEl.innerHTML = sorted.map((p, i) => `
-    <div class="step-item${p.configured ? ' step-done' : ''}" onclick="previewStepOnly('${p.id}')" style="cursor:pointer" title="点击预览此步骤">
-      <div class="step-num">${p.stepOrder}</div>
-      <div class="step-body">
-        <div class="step-title">${p.name}</div>
-        <div class="step-desc">${p.note || '安装此零件'}</div>
-        ${p.installDir ? `<span class="step-dir-tag">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M5 12h14M15 6l6 6-6 6"/></svg>
-          ${dirLabels[p.installDir] || p.installDir}
-        </span>` : '<span style="font-size:11px;color:var(--warn)">⚠ 未配置安装方向</span>'}
-      </div>
-    </div>
-  `).join('');
-};
-
-// Preview a single step only (up to this step) - 带飞入动画
 window.previewStepOnly = function(partId) {
   const sorted = [...state.parts].sort((a,b) => a.stepOrder - b.stepOrder);
   const targetPart = state.parts.find(p => p.id === partId);
@@ -1530,19 +1437,11 @@ window.previewStepOnly = function(partId) {
   renderPartList();
 };
 
-window.autoSortSteps = function() {
-  state.parts.forEach((p, i) => p.stepOrder = i+1);
-  renderSteps();
-  showToast('步骤已自动重排');
-};
-
 // ---- Tab switching ----
 window.switchTab = function(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tabProps').classList.toggle('active', tab === 'props');
-  document.getElementById('tabSteps').classList.toggle('active', tab === 'steps');
-  document.getElementById('panelProps').style.display = tab === 'props' ? '' : 'none';
-  document.getElementById('panelSteps').style.display = tab === 'steps' ? '' : 'none';
+  document.getElementById('tabProps').classList.add('active');
+  document.getElementById('panelProps').style.display = '';
 };
 
 // ---- Export config ----
@@ -1927,7 +1826,6 @@ window.resetAll = function() {
   // Clear mini preview
   hideMiniPreview();
   renderPartList();
-  renderSteps();
 };
 
 // ---- File triggers ----
@@ -2067,7 +1965,6 @@ function loadDemoModelWithConfig(partsConfig) {
     hideLoading();
     showViewport();
     renderPartList();
-    renderSteps();
     document.getElementById('previewBar').style.display = '';
     document.getElementById('btnExport').disabled = false;
     saveOriginalPositions();
@@ -2110,7 +2007,6 @@ window.exportConfig = function() {
 
 // init
 renderPartList();
-renderSteps();
 
 // 检查URL参数，加载资源配置
 loadResourceConfig();
