@@ -117,6 +117,15 @@
   .dir-btn.selected { background: rgba(59,130,246,0.12); border-color: var(--accent); color: var(--accent); }
   .dir-btn svg { width: 20px; height: 20px; }
 
+  /* Hint upload */
+  .hint-upload-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; background: var(--bg2); border: 1px dashed var(--border); border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.12s; }
+  .hint-upload-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,0.06); }
+  .hint-preview { margin-top: 8px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); position: relative; }
+  .hint-preview img { width: 100%; max-height: 120px; object-fit: contain; display: block; background: var(--bg3); }
+  .hint-preview audio { width: 100%; height: 40px; display: block; }
+  .hint-preview .hint-remove { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; }
+  .hint-preview .hint-remove:hover { background: rgba(239,68,68,0.8); }
+
   /* Collision warning */
   .collision-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius); padding: 10px 12px; margin-top: 10px; font-size: 12px; color: #ef4444; display: none; }
   .collision-box.show { display: block; }
@@ -428,9 +437,18 @@
             <span class="prop-label">步骤序号</span>
             <input class="prop-input" id="propStep" type="number" min="1" style="flex:none;width:70px" onchange="updateStep()">
           </div>
-          <div class="prop-row">
-            <span class="prop-label">操作说明</span>
-            <input class="prop-input" id="propNote" type="text" placeholder="可选备注...">
+        </div>
+
+        <div class="prop-section">
+          <div class="prop-title">提示信息</div>
+          <label class="hint-upload-btn" for="hintFileInput">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            上传音频或图片
+          </label>
+          <input type="file" id="hintFileInput" accept="image/*,.mp3,.wav,.ogg,.m4a" style="display:none" onchange="handleHintUpload(event)">
+          <div id="hintPreview" class="hint-preview" style="display:none">
+            <div id="hintPreviewContent"></div>
+            <button class="hint-remove" onclick="removeHint()">&times;</button>
           </div>
         </div>
 
@@ -1033,12 +1051,6 @@ function buildDemoModel() {
 
   const installDirs = ['+Y','+Y','+X','-X','+Z','-Z','+Y','+Z','+Z','+Y','-X','+X'];
   const stepOrder   = [1,   3,   4,   5,   6,   2,   7,   8,   9,   10,  11,  12];
-  const notes = [
-    '先安装底座，确保水平', '安装顶盖前检查支柱垂直度', '左侧支柱需与底座卡槽对齐',
-    '右侧支柱对称安装', '前侧支柱注意防转扭矩', '后侧支柱同前', '轴承需先涂抹润滑脂',
-    '横梁需用力矩扳手紧固至 15N·m', '横梁安装同左', '电机安装前检查出线方向',
-    '散热片安装前涂导热硅脂', '散热片安装同A'
-  ];
 
   demoPartDefs.forEach((def, i) => {
     let geo;
@@ -1066,7 +1078,6 @@ function buildDemoModel() {
       rotation: { x: 0, y: 0, z: 0 },
       installDir: installDirs[i],
       stepOrder: stepOrder[i],
-      note: notes[i],
       mesh: group,
       configured: true,
     });
@@ -1157,7 +1168,6 @@ function processGLTFModel(scene3d, filename) {
         rotation: { x: Math.round(THREE.MathUtils.radToDeg(node.rotation.x)), y: Math.round(THREE.MathUtils.radToDeg(node.rotation.y)), z: Math.round(THREE.MathUtils.radToDeg(node.rotation.z)) },
         installDir: null,
         stepOrder: partIndex + 1,
-        note: '',
         mesh: group,
         configured: false,
       });
@@ -1189,7 +1199,6 @@ function processOBJModel(obj, filename) {
         rotation: { x: 0, y: 0, z: 0 },
         installDir: null,
         stepOrder: i+1,
-        note: '',
         mesh: modelRoot.children[modelRoot.children.length-1],
         configured: false,
       });
@@ -1342,8 +1351,10 @@ function showPropEditor(part) {
   document.getElementById('rotY').value = part.rotation ? part.rotation.y : 0;
   document.getElementById('rotZ').value = part.rotation ? part.rotation.z : 0;
   document.getElementById('propStep').value = part.stepOrder;
-  document.getElementById('propNote').value = part.note || '';
   document.getElementById('customDirInput').value = part.installDir || '';
+
+  // Hint preview
+  updateHintPreview(part.hintUrl);
 
   // Dir btns
   document.querySelectorAll('.dir-btn').forEach(btn => {
@@ -1388,7 +1399,6 @@ window.applyPartConfig = function() {
   const part = state.parts.find(p => p.id === state.selectedPartId);
   if (!part) return;
   part.name = document.getElementById('propName').value || part.name;
-  part.note = document.getElementById('propNote').value;
   if (!part.rotation) part.rotation = { x: 0, y: 0, z: 0 };
   part.rotation.x = parseFloat(document.getElementById('rotX').value) || 0;
   part.rotation.y = parseFloat(document.getElementById('rotY').value) || 0;
@@ -1396,6 +1406,46 @@ window.applyPartConfig = function() {
   part.configured = !!part.installDir;
   renderPartList();
   showToast('配置已保存');
+};
+
+// ---- Hint upload ----
+window.handleHintUpload = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    part.hintUrl = ev.target.result;
+    updateHintPreview(part.hintUrl);
+    showToast('提示信息已上传');
+  };
+  reader.readAsDataURL(file);
+};
+
+window.updateHintPreview = function(hintUrl) {
+  const preview = document.getElementById('hintPreview');
+  const content = document.getElementById('hintPreviewContent');
+  if (!hintUrl) {
+    preview.style.display = 'none';
+    return;
+  }
+  preview.style.display = 'block';
+  const isImage = hintUrl.startsWith('data:image');
+  if (isImage) {
+    content.innerHTML = `<img src="${hintUrl}" alt="提示图片">`;
+  } else {
+    content.innerHTML = `<audio src="${hintUrl}" controls></audio>`;
+  }
+};
+
+window.removeHint = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (!part) return;
+  part.hintUrl = null;
+  document.getElementById('hintFileInput').value = '';
+  updateHintPreview(null);
+  showToast('提示信息已删除');
 };
 
 window.previewStepOnly = function(partId) {
@@ -1486,7 +1536,6 @@ window.exportConfig = function() {
       rotation: p.rotation,
       installDirection: p.installDir,
       assemblyStep: p.stepOrder,
-      note: p.note,
       configured: p.configured,
     }))
   };
@@ -1914,7 +1963,6 @@ function saveResourceConfig() {
       rotation: p.rotation,
       installDir: p.installDir,
       stepOrder: p.stepOrder,
-      note: p.note,
     }));
     localStorage.setItem('resource_list_data', JSON.stringify(resources));
   }
@@ -2016,7 +2064,6 @@ window.exportConfig = function() {
       rotation: p.rotation,
       installDirection: p.installDir,
       assemblyStep: p.stepOrder,
-      note: p.note,
       configured: p.configured,
     }))
   };
