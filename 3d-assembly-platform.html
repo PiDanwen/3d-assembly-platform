@@ -345,6 +345,15 @@
         从左侧列表选择零件<br>查看和编辑属性
       </div>
       <div id="propEditor" style="display:none" class="fade-in">
+        <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:8px">
+          <button class="btn btn-secondary" id="btnEditToggle" onclick="toggleEditMode()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            编辑
+          </button>
+          <button class="btn btn-primary" id="btnSaveEdit" style="display:none" onclick="saveEdit()">保存</button>
+          <button class="btn btn-secondary" id="btnCancelEdit" style="display:none" onclick="cancelEdit()">取消</button>
+        </div>
+
         <div class="prop-section">
           <div class="prop-title">基本信息</div>
           <div class="prop-row">
@@ -1367,6 +1376,9 @@ function showPropEditor(part) {
   document.querySelectorAll('.dir-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.dir === part.installDir);
   });
+
+  // Reset edit mode UI
+  exitEditMode();
 }
 
 // ---- Direction selector ----
@@ -1416,6 +1428,45 @@ window.applyPartConfig = function() {
 };
 
 // ---- Hint upload ----
+// ---- Edit mode toggle ----
+let editModeActive = false;
+
+window.toggleEditMode = function() {
+  editModeActive = true;
+  document.getElementById('btnEditToggle').style.display = 'none';
+  document.getElementById('btnSaveEdit').style.display = '';
+  document.getElementById('btnCancelEdit').style.display = '';
+  setEditFieldsDisabled(false);
+};
+
+window.saveEdit = function() {
+  applyPartConfig();
+  exitEditMode();
+};
+
+window.cancelEdit = function() {
+  const part = state.parts.find(p => p.id === state.selectedPartId);
+  if (part) showPropEditor(part);
+  exitEditMode();
+};
+
+function exitEditMode() {
+  editModeActive = false;
+  document.getElementById('btnEditToggle').style.display = '';
+  document.getElementById('btnSaveEdit').style.display = 'none';
+  document.getElementById('btnCancelEdit').style.display = 'none';
+  setEditFieldsDisabled(true);
+}
+
+function setEditFieldsDisabled(disabled) {
+  const ids = ['propName','propStep','rotX','rotY','rotZ','customDirInput','hintImgInput','hintAudioInput'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = disabled;
+  });
+  document.querySelectorAll('.dir-btn').forEach(b => { b.disabled = disabled; });
+}
+
 window.handleHintUpload = function(e) {
   const file = e.target.files[0];
   if (!file) return;
