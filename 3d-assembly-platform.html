@@ -441,11 +441,18 @@
 
         <div class="prop-section">
           <div class="prop-title">提示信息</div>
-          <label class="hint-upload-btn" for="hintFileInput">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-            上传音频或图片
-          </label>
-          <input type="file" id="hintFileInput" accept="image/*,.mp3,.wav,.ogg,.m4a" style="display:none" onchange="handleHintUpload(event)">
+          <div style="display:flex;gap:8px">
+            <label class="hint-upload-btn" for="hintImgInput" style="flex:1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              上传图片
+            </label>
+            <label class="hint-upload-btn" for="hintAudioInput" style="flex:1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              上传音频
+            </label>
+          </div>
+          <input type="file" id="hintImgInput" accept="image/*" style="display:none" onchange="handleHintUpload(event)">
+          <input type="file" id="hintAudioInput" accept=".mp3,.wav,.ogg,.m4a" style="display:none" onchange="handleHintUpload(event)">
           <div id="hintPreview" class="hint-preview" style="display:none">
             <div id="hintPreviewContent"></div>
             <button class="hint-remove" onclick="removeHint()">&times;</button>
@@ -1354,7 +1361,7 @@ function showPropEditor(part) {
   document.getElementById('customDirInput').value = part.installDir || '';
 
   // Hint preview
-  updateHintPreview(part.hintUrl);
+  updateHintPreview(part.hintUrl, part.hintType);
 
   // Dir btns
   document.querySelectorAll('.dir-btn').forEach(btn => {
@@ -1414,16 +1421,19 @@ window.handleHintUpload = function(e) {
   if (!file) return;
   const part = state.parts.find(p => p.id === state.selectedPartId);
   if (!part) return;
+  const inputId = e.target.id;
+  const isImage = inputId === 'hintImgInput';
   const reader = new FileReader();
   reader.onload = function(ev) {
     part.hintUrl = ev.target.result;
-    updateHintPreview(part.hintUrl);
-    showToast('提示信息已上传');
+    part.hintType = isImage ? 'image' : 'audio';
+    updateHintPreview(part.hintUrl, part.hintType);
+    showToast(isImage ? '图片已上传' : '音频已上传');
   };
   reader.readAsDataURL(file);
 };
 
-window.updateHintPreview = function(hintUrl) {
+window.updateHintPreview = function(hintUrl, hintType) {
   const preview = document.getElementById('hintPreview');
   const content = document.getElementById('hintPreviewContent');
   if (!hintUrl) {
@@ -1431,11 +1441,10 @@ window.updateHintPreview = function(hintUrl) {
     return;
   }
   preview.style.display = 'block';
-  const isImage = hintUrl.startsWith('data:image');
-  if (isImage) {
-    content.innerHTML = `<img src="${hintUrl}" alt="提示图片">`;
-  } else {
+  if (hintType === 'audio') {
     content.innerHTML = `<audio src="${hintUrl}" controls></audio>`;
+  } else {
+    content.innerHTML = `<img src="${hintUrl}" alt="提示图片">`;
   }
 };
 
@@ -1443,7 +1452,9 @@ window.removeHint = function() {
   const part = state.parts.find(p => p.id === state.selectedPartId);
   if (!part) return;
   part.hintUrl = null;
-  document.getElementById('hintFileInput').value = '';
+  part.hintType = null;
+  document.getElementById('hintImgInput').value = '';
+  document.getElementById('hintAudioInput').value = '';
   updateHintPreview(null);
   showToast('提示信息已删除');
 };
