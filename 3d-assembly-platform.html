@@ -188,11 +188,7 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
   .fade-in { animation: fadeIn 0.2s ease; }
 
-  /* 旋转轴按钮激活 */
-  .rot-axis-btn.active { border-color: var(--accent) !important; background: rgba(59,130,246,0.12) !important; color: var(--accent) !important; }
 
-  /* 360° 旋转预览面板 - 白色主题 */
-  #rotatePanel { background: rgba(255,255,255,0.95) !important; border: 1px solid var(--border) !important; box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important; }
 </style>
 </head>
 <body>
@@ -280,58 +276,8 @@
     </div>
 
     <canvas id="canvas3d" style="display:none"></canvas>
-    <div class="viewport-toolbar" id="viewportToolbar" style="display:none">
-      <button class="btn" onclick="resetCamera()" title="重置视角">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M3 12a9 9 0 1018 0A9 9 0 003 12zM12 8v4l3 3"/></svg>
-      </button>
-      <button class="btn" onclick="toggleWireframe()" title="线框模式" id="btnWireframe">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><polygon points="12,2 22,20 2,20"/><line x1="2" y1="20" x2="22" y2="20"/><line x1="12" y1="2" x2="2" y2="20"/><line x1="12" y1="2" x2="22" y2="20"/></svg>
-      </button>
-      <button class="btn" onclick="toggleGrid()" title="网格" id="btnGrid">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      </button>
-      <button class="btn" onclick="focusSelected()" title="聚焦选中" id="btnFocus">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4 12H2M22 12h-2M6.34 6.34L5 5M19 5l-1.34 1.34M6.34 17.66L5 19M19 19l-1.34-1.34"/></svg>
-      </button>
-      <button class="btn" onclick="toggleAutoRotate()" title="360° 旋转预览" id="btnAutoRotate">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M12 2a10 10 0 0110 10"/><path d="M22 12a10 10 0 01-10 10"/><path d="M12 22a10 10 0 01-10-10"/><path d="M2 12a10 10 0 0110-10"/><polyline points="22,7 22,12 17,12"/></svg>
-      </button>
-    </div>
     <div class="viewport-hint" id="viewportHint" style="display:none">左键旋转 · 右键平移 · 滚轮缩放 · 点击选择零件</div>
     <div class="viewport-mode-tag" id="viewportModeTag" style="display:none">查看模式</div>
-
-    <!-- 360° 旋转预览面板 -->
-    <div id="rotatePanel" style="display:none;position:absolute;bottom:20px;right:16px;background:rgba(22,27,39,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 16px;width:210px;backdrop-filter:blur(6px);">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:7px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="width:14px;height:14px;animation:spin360 2s linear infinite" id="rotatePanelIcon"><path d="M12 2a10 10 0 0110 10"/><path d="M22 12a10 10 0 01-10 10"/><path d="M12 22a10 10 0 01-10-10"/><path d="M2 12a10 10 0 0110-10"/><polyline points="22,7 22,12 17,12"/></svg>
-          <span style="font-size:12px;font-weight:600;color:var(--accent)">360° 旋转预览</span>
-        </div>
-        <button onclick="toggleAutoRotate()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:0 2px">✕</button>
-      </div>
-      <div id="rotatePanelPartName" style="font-size:13px;color:var(--text);margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-          <span style="font-size:11px;color:var(--text3)">旋转速度</span>
-          <span style="font-size:11px;color:var(--text2)" id="rotateSpeedLabel">1.0×</span>
-        </div>
-        <input type="range" id="rotateSpeedSlider" min="0.2" max="3.0" step="0.1" value="1.0"
-          style="width:100%;accent-color:var(--accent)"
-          oninput="onRotateSpeedChange(this.value)">
-      </div>
-      <div style="margin-bottom:10px">
-        <span style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px">旋转轴</span>
-        <div style="display:flex;gap:6px">
-          <button class="rot-axis-btn" data-axis="Y" onclick="setRotateAxis(this)" style="flex:1;padding:5px 4px;border-radius:6px;border:1px solid var(--accent);background:rgba(79,142,247,0.15);color:var(--accent);font-size:12px;cursor:pointer">Y 轴</button>
-          <button class="rot-axis-btn" data-axis="X" onclick="setRotateAxis(this)" style="flex:1;padding:5px 4px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;cursor:pointer">X 轴</button>
-          <button class="rot-axis-btn" data-axis="Z" onclick="setRotateAxis(this)" style="flex:1;padding:5px 4px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;cursor:pointer">Z 轴</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button onclick="pauseResumeRotate()" id="btnPauseRotate" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px;cursor:pointer">⏸ 暂停</button>
-        <button onclick="resetRotate()" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px;cursor:pointer">↺ 复位</button>
-      </div>
-    </div>
   </div>
 
   <!-- Right Panel: Properties -->
@@ -779,50 +725,10 @@ const ro = new ResizeObserver(() => {
 });
 ro.observe(vp);
 
-// ---- 360° Auto-Rotate State ----
-const rotateState = {
-  active: false,
-  paused: false,
-  axis: 'Y',          // 'X' | 'Y' | 'Z'
-  speed: 1.0,         // multiplier
-  angle: 0,           // accumulated angle (radians)
-  pivotTarget: null,  // THREE.Vector3 center of selected part
-  orbitRadius: 0,     // camera orbit radius
-  orbitPolar: 0,      // polar angle (from Y axis), kept constant during spin
-};
-
 // Render loop
 let previewTimer = null;
 function animate() {
   requestAnimationFrame(animate);
-
-  // 360° orbit rotate: move camera around the selected part
-  if (rotateState.active && !rotateState.paused && rotateState.pivotTarget) {
-    const dt = 0.016; // ~60fps assumed
-    const speed = rotateState.speed * 0.012; // radians per frame
-    rotateState.angle += speed;
-
-    const pivot = rotateState.pivotTarget;
-    const r = rotateState.orbitRadius;
-    const polar = rotateState.orbitPolar;
-
-    if (rotateState.axis === 'Y') {
-      camera.position.x = pivot.x + r * Math.sin(rotateState.angle) * Math.sin(polar);
-      camera.position.y = pivot.y + r * Math.cos(polar);
-      camera.position.z = pivot.z + r * Math.cos(rotateState.angle) * Math.sin(polar);
-    } else if (rotateState.axis === 'X') {
-      camera.position.x = pivot.x + r * Math.cos(polar);
-      camera.position.y = pivot.y + r * Math.sin(rotateState.angle) * Math.sin(polar);
-      camera.position.z = pivot.z + r * Math.cos(rotateState.angle) * Math.sin(polar);
-    } else { // Z
-      camera.position.x = pivot.x + r * Math.sin(rotateState.angle) * Math.sin(polar);
-      camera.position.y = pivot.y + r * Math.cos(rotateState.angle) * Math.sin(polar);
-      camera.position.z = pivot.z + r * Math.cos(polar);
-    }
-    camera.lookAt(pivot);
-    controls.target.copy(pivot);
-  }
-
   controls.update();
   renderer.render(scene, camera);
 }
@@ -853,180 +759,6 @@ canvas.addEventListener('pointerup', (e) => {
 });
 
 // Reset camera
-window.resetCamera = function() {
-  controls.reset();
-  camera.position.set(3, 2.5, 4);
-  controls.update();
-};
-
-// Wireframe toggle
-window.toggleWireframe = function() {
-  state.wireframe = !state.wireframe;
-  state.parts.forEach(p => {
-    if (p.mesh) p.mesh.traverse(c => { if (c.isMesh && c.userData._origMat) c.material.wireframe = state.wireframe; });
-  });
-  document.getElementById('btnWireframe').style.color = state.wireframe ? 'var(--accent)' : '';
-};
-
-// Grid toggle
-window.toggleGrid = function() {
-  state.gridVisible = !state.gridVisible;
-  gridHelper.visible = state.gridVisible;
-  document.getElementById('btnGrid').style.color = state.gridVisible ? 'var(--accent)' : '';
-};
-
-// Focus selected
-window.focusSelected = function() {
-  const part = state.parts.find(p => p.id === state.selectedPartId);
-  if (!part || !part.mesh) return;
-  const box = new THREE.Box3().setFromObject(part.mesh);
-  const center = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3()).length();
-  controls.target.copy(center);
-  camera.position.copy(center).addScaledVector(new THREE.Vector3(1,0.8,1).normalize(), size * 1.8);
-  controls.update();
-};
-
-// ---- 360° Auto-Rotate Controls ----
-window.toggleAutoRotate = function() {
-  if (rotateState.active) {
-    stopAutoRotate();
-  } else {
-    startAutoRotate();
-  }
-};
-
-function startAutoRotate() {
-  const part = state.parts.find(p => p.id === state.selectedPartId);
-  if (!part) {
-    showToast('请先选择一个零件');
-    return;
-  }
-
-  // Compute bounding box center & orbit radius
-  let center = new THREE.Vector3(part.position.x, part.position.y, part.position.z);
-  let size = 1.2;
-  if (part.mesh) {
-    const box = new THREE.Box3().setFromObject(part.mesh);
-    center = box.getCenter(new THREE.Vector3());
-    size = box.getSize(new THREE.Vector3()).length();
-  }
-  rotateState.pivotTarget = center.clone();
-  rotateState.orbitRadius = size * 2.2;
-
-  // Compute current polar angle from current camera position
-  const offset = camera.position.clone().sub(center);
-  rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.y / offset.length())));
-  // Start angle from current azimuth
-  rotateState.angle = Math.atan2(offset.x, offset.z);
-
-  rotateState.active = true;
-  rotateState.paused = false;
-
-  // Disable OrbitControls while rotating
-  controls.enabled = false;
-
-  // Show panel
-  const panel = document.getElementById('rotatePanel');
-  panel.style.display = 'block';
-  panel.style.animation = 'fadeIn 0.2s ease';
-  document.getElementById('rotatePanelPartName').textContent = part.name;
-  document.getElementById('rotateSpeedSlider').value = rotateState.speed;
-  document.getElementById('rotateSpeedLabel').textContent = rotateState.speed.toFixed(1) + '×';
-  document.getElementById('btnPauseRotate').textContent = '⏸ 暂停';
-  document.getElementById('btnAutoRotate').style.color = 'var(--accent)';
-
-  // Update viewport mode tag
-  document.getElementById('viewportModeTag').textContent = '360° 旋转预览';
-  document.getElementById('viewportModeTag').style.color = 'var(--success)';
-  document.getElementById('viewportModeTag').style.borderColor = 'rgba(46,201,124,0.35)';
-  document.getElementById('viewportModeTag').style.background = 'rgba(46,201,124,0.12)';
-  document.getElementById('viewportHint').textContent = '360° 旋转中 · 点击工具栏按钮停止';
-}
-
-function stopAutoRotate() {
-  rotateState.active = false;
-  rotateState.paused = false;
-  rotateState.pivotTarget = null;
-  controls.enabled = true;
-
-  document.getElementById('rotatePanel').style.display = 'none';
-  document.getElementById('btnAutoRotate').style.color = '';
-  document.getElementById('viewportModeTag').textContent = '查看模式';
-  document.getElementById('viewportModeTag').style.color = 'var(--accent)';
-  document.getElementById('viewportModeTag').style.borderColor = 'rgba(79,142,247,0.3)';
-  document.getElementById('viewportModeTag').style.background = 'rgba(79,142,247,0.15)';
-  document.getElementById('viewportHint').textContent = '左键旋转 · 右键平移 · 滚轮缩放 · 点击选择零件';
-}
-
-window.pauseResumeRotate = function() {
-  if (!rotateState.active) return;
-  rotateState.paused = !rotateState.paused;
-  const btn = document.getElementById('btnPauseRotate');
-  if (rotateState.paused) {
-    btn.textContent = '▶ 继续';
-    controls.enabled = true; // Allow manual control while paused
-  } else {
-    btn.textContent = '⏸ 暂停';
-    controls.enabled = false;
-    // Re-sync orbit from current camera position so resume is seamless
-    if (rotateState.pivotTarget) {
-      const offset = camera.position.clone().sub(rotateState.pivotTarget);
-      rotateState.orbitRadius = offset.length();
-      rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.y / offset.length())));
-      rotateState.angle = Math.atan2(offset.x, offset.z);
-    }
-  }
-};
-
-window.resetRotate = function() {
-  const part = state.parts.find(p => p.id === state.selectedPartId);
-  if (!part) return;
-  let center = new THREE.Vector3(part.position.x, part.position.y, part.position.z);
-  let size = 1.2;
-  if (part.mesh) {
-    const box = new THREE.Box3().setFromObject(part.mesh);
-    center = box.getCenter(new THREE.Vector3());
-    size = box.getSize(new THREE.Vector3()).length();
-  }
-  rotateState.pivotTarget = center.clone();
-  rotateState.orbitRadius = size * 2.2;
-  rotateState.angle = 0;
-  rotateState.orbitPolar = Math.PI / 3.5; // nice ~51° tilt
-};
-
-window.onRotateSpeedChange = function(val) {
-  rotateState.speed = parseFloat(val);
-  document.getElementById('rotateSpeedLabel').textContent = parseFloat(val).toFixed(1) + '×';
-};
-
-window.setRotateAxis = function(btn) {
-  document.querySelectorAll('.rot-axis-btn').forEach(b => {
-    b.style.borderColor = 'var(--border2)';
-    b.style.background = 'transparent';
-    b.style.color = 'var(--text2)';
-  });
-  btn.style.borderColor = 'var(--accent)';
-  btn.style.background = 'rgba(79,142,247,0.15)';
-  btn.style.color = 'var(--accent)';
-  rotateState.axis = btn.dataset.axis;
-  // Re-sync angle for new axis
-  if (rotateState.pivotTarget) {
-    const offset = camera.position.clone().sub(rotateState.pivotTarget);
-    rotateState.orbitRadius = offset.length();
-    if (rotateState.axis === 'Y') {
-      rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.y / offset.length())));
-      rotateState.angle = Math.atan2(offset.x, offset.z);
-    } else if (rotateState.axis === 'X') {
-      rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.x / offset.length())));
-      rotateState.angle = Math.atan2(offset.y, offset.z);
-    } else {
-      rotateState.orbitPolar = Math.acos(Math.max(-1, Math.min(1, offset.z / offset.length())));
-      rotateState.angle = Math.atan2(offset.x, offset.y);
-    }
-  }
-};
-
 // ---- Demo model builder ----
 window.loadDemoModel = function() {
   showLoading('生成演示模型...');
@@ -1254,7 +986,6 @@ function hideLoading() {
 function showViewport() {
   document.getElementById('uploadOverlay').style.display = 'none';
   document.getElementById('canvas3d').style.display = 'block';
-  document.getElementById('viewportToolbar').style.display = 'flex';
   document.getElementById('viewportHint').style.display = 'block';
   document.getElementById('viewportModeTag').style.display = 'block';
   const w = vp.clientWidth, h = vp.clientHeight;
@@ -1322,22 +1053,6 @@ window.selectPart = function(id) {
 
   // Auto-update mini 360° preview
   updateMiniPreview(part);
-
-  // If auto-rotate is active, re-target to newly selected part
-  if (rotateState.active) {
-    let center = new THREE.Vector3(part.position.x, part.position.y, part.position.z);
-    let size = 1.2;
-    if (part.mesh) {
-      const box = new THREE.Box3().setFromObject(part.mesh);
-      center = box.getCenter(new THREE.Vector3());
-      size = box.getSize(new THREE.Vector3()).length();
-    }
-    rotateState.pivotTarget = center.clone();
-    rotateState.orbitRadius = size * 2.2;
-    rotateState.angle = 0;
-    rotateState.orbitPolar = Math.PI / 3.5;
-    document.getElementById('rotatePanelPartName').textContent = part.name;
-  }
 
   // Update UI
   renderPartList();
@@ -1911,7 +1626,6 @@ window.resetAll = function() {
   while (modelRoot.children.length) modelRoot.remove(modelRoot.children[0]);
   document.getElementById('uploadOverlay').style.display = 'flex';
   document.getElementById('canvas3d').style.display = 'none';
-  document.getElementById('viewportToolbar').style.display = 'none';
   document.getElementById('viewportHint').style.display = 'none';
   document.getElementById('viewportModeTag').style.display = 'none';
   document.getElementById('previewBar').style.display = 'none';
